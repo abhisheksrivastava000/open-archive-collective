@@ -1,73 +1,130 @@
-# Welcome to your Lovable project
+# Open Archive Collective
 
-## Project info
+A movement to liberate information, education, and knowledge for every single soul.
 
-**URL**: https://lovable.dev/projects/7dda30b1-41fe-4ae9-87a0-369f67622e42
+## Overview
 
-## How can I edit this code?
+The Open Archive Collective is a web application dedicated to the free distribution of knowledge. It serves as a platform to advocate for the liberation of information from paywalls and restrictions, and provides a space for sharing educational resources, books, research papers, and software.
 
-There are several ways of editing your application.
+This project is built with modern web technologies, focusing on performance, accessibility, and a clean user experience.
 
-**Use Lovable**
+## Features
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/7dda30b1-41fe-4ae9-87a0-369f67622e42) and start prompting.
+-   **Manifesto**: A comprehensive declaration of our philosophy regarding the freedom of knowledge.
+-   **Library**: A searchable collection of free resources (books, research, software).
+-   **Mission**: Detailed information about our core values: Universal Access, Freedom First, Community Driven, and Privacy Respected.
+-   **Contribute**: A portal for users to upload and share knowledge with the world.
+-   **Responsive Design**: Fully responsive interface built with Tailwind CSS.
 
-Changes made via Lovable will be committed automatically to this repo.
+## Tech Stack
 
-**Use your preferred IDE**
+-   **Frontend Framework**: [React](https://react.dev/)
+-   **Build Tool**: [Vite](https://vitejs.dev/)
+-   **Language**: [TypeScript](https://www.typescriptlang.org/)
+-   **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+-   **UI Components**: [shadcn/ui](https://ui.shadcn.com/) (based on Radix UI)
+-   **Routing**: [React Router](https://reactrouter.com/)
+-   **State Management**: [TanStack Query](https://tanstack.com/query/latest)
+-   **Icons**: [Lucide React](https://lucide.dev/)
+-   **Form Handling**: React Hook Form + Zod
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Getting Started
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Prerequisites
 
-Follow these steps:
+-   Node.js (v18 or higher recommended)
+-   npm, yarn, pnpm, or bun
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Installation
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+1.  Clone the repository:
+    ```bash
+    git clone <repository-url>
+    cd open-archive-collective
+    ```
 
-# Step 3: Install the necessary dependencies.
-npm i
+2.  Install dependencies:
+    ```bash
+    npm install
+    # or
+    yarn install
+    # or
+    pnpm install
+    # or
+    bun install
+    ```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+### Development
+
+To start the development server:
+
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The application will be available at `http://localhost:8080` (or the port shown in your terminal).
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Building for Production
 
-**Use GitHub Codespaces**
+To build the application for production:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```bash
+npm run build
+```
 
-## What technologies are used for this project?
+To preview the production build locally:
 
-This project is built with:
+```bash
+npm run preview
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Linting
 
-## How can I deploy this project?
+To run the linter:
 
-Simply open [Lovable](https://lovable.dev/projects/7dda30b1-41fe-4ae9-87a0-369f67622e42) and click on Share -> Publish.
+```bash
+npm run lint
+```
 
-## Can I connect a custom domain to my Lovable project?
+## Project Structure
 
-Yes, you can!
+```
+src/
+├── components/         # Reusable UI components
+│   ├── ui/            # shadcn/ui primitive components
+│   ├── Navigation.tsx # Main navigation bar
+│   ├── QuoteBlock.tsx # Reusable quote component
+│   └── ...
+├── hooks/             # Custom React hooks
+├── lib/               # Utility functions
+├── pages/             # Page components
+│   ├── Home.tsx       # Landing page
+│   ├── Manifesto.tsx  # The Freedom Manifesto
+│   ├── Library.tsx    # Resource library
+│   ├── Mission.tsx    # Mission statement and values
+│   ├── Contribute.tsx # Contribution page
+│   └── ...
+├── App.tsx            # Main application component and routing
+└── main.tsx           # Entry point
+```
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Contributing
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+We welcome contributions from everyone who believes in the freedom of knowledge.
+
+1.  Fork the repository.
+2.  Create a new branch (`git checkout -b feature/amazing-feature`).
+3.  Make your changes.
+4.  Commit your changes (`git commit -m "Add some amazing feature"`).
+5.  Push to the branch (`git push origin feature/amazing-feature`).
+6.  Open a Pull Request.
+
+## License
+
+This project is open source and available under the [MIT License](LICENSE).
+
+## Acknowledgments
+
+-   Built with [Lovable](https://lovable.dev/)
+-   Icons by [Lucide](https://lucide.dev/)
+-   UI components by [shadcn/ui](https://ui.shadcn.com/)
