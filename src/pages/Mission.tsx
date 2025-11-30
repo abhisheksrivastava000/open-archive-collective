@@ -11,7 +11,7 @@ const Mission = () => {
             Our Mission
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            To liberate knowledge, information, and education for every single soul on this planet
+            To liberate knowledge, information, and education for every single soul
           </p>
         </div>
 
