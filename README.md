@@ -6,7 +6,7 @@ A movement to liberate information, education, and knowledge for every single so
 
 The Open Archive Collective is a web application dedicated to the free distribution of knowledge. It serves as a platform to advocate for the liberation of information from paywalls and restrictions, and provides a space for sharing educational resources, books, research papers, and software.
 
-This project is built with modern web technologies, focusing on performance, accessibility, and a clean user experience.
+This project is built with modern web technologies, focusing on performance, accessibility, and a clean user experience. It features a full-stack architecture with a React frontend and a Node.js/Express backend connected to MongoDB.
 
 ## Features
 
@@ -15,10 +15,12 @@ This project is built with modern web technologies, focusing on performance, acc
 -   **Mission**: Detailed information about our core values: Universal Access, Freedom First, Community Driven, and Privacy Respected.
 -   **Contribute**: A portal for users to upload and share knowledge with the world.
 -   **Responsive Design**: Fully responsive interface built with Tailwind CSS.
+-   **Full-Stack API**: Robust backend API for managing resources and user contributions.
 
 ## Tech Stack
 
--   **Frontend Framework**: [React](https://react.dev/)
+### Frontend
+-   **Framework**: [React](https://react.dev/)
 -   **Build Tool**: [Vite](https://vitejs.dev/)
 -   **Language**: [TypeScript](https://www.typescriptlang.org/)
 -   **Styling**: [Tailwind CSS](https://tailwindcss.com/)
@@ -28,12 +30,20 @@ This project is built with modern web technologies, focusing on performance, acc
 -   **Icons**: [Lucide React](https://lucide.dev/)
 -   **Form Handling**: React Hook Form + Zod
 
+### Backend
+-   **Runtime**: [Node.js](https://nodejs.org/)
+-   **Framework**: [Express.js](https://expressjs.com/)
+-   **Database**: [MongoDB](https://www.mongodb.com/)
+-   **ODM**: [Mongoose](https://mongoosejs.com/)
+-   **Authentication**: (Planned/In-progress)
+
 ## Getting Started
 
 ### Prerequisites
 
 -   Node.js (v18 or higher recommended)
 -   npm, yarn, pnpm, or bun
+-   MongoDB (Local instance or Atlas cluster)
 
 ### Installation
 
@@ -43,69 +53,89 @@ This project is built with modern web technologies, focusing on performance, acc
     cd open-archive-collective
     ```
 
-2.  Install dependencies:
+2.  **Frontend Setup**:
     ```bash
+    # Install frontend dependencies
     npm install
-    # or
-    yarn install
-    # or
-    pnpm install
-    # or
-    bun install
     ```
 
-### Development
+3.  **Backend Setup**:
+    ```bash
+    # Navigate to server directory
+    cd server
+    
+    # Install backend dependencies
+    npm install
+    ```
 
-To start the development server:
+### Configuration
 
-```bash
-npm run dev
-```
+1.  **Backend Environment Variables**:
+    Create a `.env` file in the `server/` directory based on `.env.example`:
+    ```bash
+    cp server/.env.example server/.env
+    ```
+    
+    Update `server/.env` with your configuration:
+    ```env
+    PORT=5001
+    MONGODB_URI=mongodb://localhost:27017/open-archive-collective
+    ```
 
-The application will be available at `http://localhost:8080` (or the port shown in your terminal).
+### Running the Application
+
+You need to run both the frontend and backend servers.
+
+1.  **Start the Backend**:
+    Open a terminal and run:
+    ```bash
+    cd server
+    npm run dev
+    ```
+    The backend API will run on `http://localhost:5001`.
+
+2.  **Start the Frontend**:
+    Open a new terminal and run:
+    ```bash
+    npm run dev
+    ```
+    The frontend application will run on `http://localhost:8080`.
 
 ### Building for Production
 
-To build the application for production:
+1.  **Frontend**:
+    ```bash
+    npm run build
+    ```
 
-```bash
-npm run build
-```
-
-To preview the production build locally:
-
-```bash
-npm run preview
-```
-
-### Linting
-
-To run the linter:
-
-```bash
-npm run lint
-```
+2.  **Backend**:
+    The backend is ready to run with `node index.js` (or via a process manager like PM2).
 
 ## Project Structure
 
 ```
-src/
-├── components/         # Reusable UI components
-│   ├── ui/            # shadcn/ui primitive components
-│   ├── Navigation.tsx # Main navigation bar
-│   ├── QuoteBlock.tsx # Reusable quote component
-│   └── ...
-├── hooks/             # Custom React hooks
-├── lib/               # Utility functions
-├── pages/             # Page components
-│   ├── Home.tsx       # Landing page
-│   ├── Manifesto.tsx  # The Freedom Manifesto
-│   ├── Library.tsx    # Resource library
-│   ├── Mission.tsx    # Mission statement and values
-│   ├── Contribute.tsx # Contribution page
-│   └── ...
-├── App.tsx            # Main application component and routing
-└── main.tsx           # Entry point
+.
+├── public/             # Static assets
+├── server/             # Backend code
+│   ├── index.js        # Entry point
+│   ├── package.json    # Backend dependencies
+│   └── .env            # Environment variables (not committed)
+├── src/                # Frontend source code
+│   ├── components/     # Reusable UI components
+│   │   ├── ui/         # shadcn/ui primitive components
+│   │   ├── Navigation.tsx
+│   │   └── ...
+│   ├── hooks/          # Custom React hooks
+│   ├── lib/            # Utility functions
+│   ├── pages/          # Page components
+│   │   ├── Home.tsx
+│   │   ├── Manifesto.tsx
+│   │   ├── Library.tsx
+│   │   └── ...
+│   ├── App.tsx         # Main application component
+│   └── main.tsx        # Frontend entry point
+├── package.json        # Frontend dependencies
+└── README.md           # Project documentation
 ```
 
 ## Contributing
