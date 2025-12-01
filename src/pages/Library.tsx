@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
-import { FileText, Download, Search, Loader2, Magnet } from "lucide-react";
+import { FileText, Download, Search, Loader2, Magnet, Play } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import QuoteBlock from "@/components/QuoteBlock";
 import { useToast } from "@/hooks/use-toast";
+import TorrentPlayer from "@/components/TorrentPlayer";
 
 interface Torrent {
   _id: string;
@@ -123,7 +125,23 @@ const Library = () => {
                         Magnet
                       </a>
                     </Button>
-                    {/* Future: Add Stream/View button here */}
+                    
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Play className="w-4 h-4 mr-2" />
+                          Stream
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-3xl">
+                        <DialogHeader>
+                          <DialogTitle>{torrent.title}</DialogTitle>
+                        </DialogHeader>
+                        <div className="mt-4">
+                          <TorrentPlayer magnetURI={torrent.magnetURI} title={torrent.title} />
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </div>
               </Card>

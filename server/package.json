@@ -23,6 +23,7 @@
     "webtorrent": "^2.8.5"
   },
   "devDependencies": {
+    "@types/webtorrent": "^0.110.1",
     "nodemon": "^3.1.0"
   }
 }

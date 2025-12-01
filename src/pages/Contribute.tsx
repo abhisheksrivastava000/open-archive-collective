@@ -101,7 +101,7 @@ const Contribute = () => {
                 </div>
                 <h2 className="text-3xl font-display font-bold mb-2">Upload Files</h2>
                 <p className="text-muted-foreground">
-                  Select a file to generate a torrent and magnet link automatically.
+                  Select a file to generate a torrent. The server will seed it automatically (Hybrid Mode).
                 </p>
               </div>
 
