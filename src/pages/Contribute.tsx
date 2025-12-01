@@ -1,9 +1,78 @@
-import { Upload, FileText, HardDrive } from "lucide-react";
+import { useState } from "react";
+import { Upload, FileText, HardDrive, Loader2, CheckCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 import QuoteBlock from "@/components/QuoteBlock";
 
 const Contribute = () => {
+  const { toast } = useToast();
+  const [file, setFile] = useState<File | null>(null);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [magnetLink, setMagnetLink] = useState("");
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
+      // Auto-fill title if empty
+      if (!title) {
+        setTitle(e.target.files[0].name);
+      }
+    }
+  };
+
+  const handleUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!file) {
+      toast({
+        title: "No file selected",
+        description: "Please select a file to upload.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("title", title);
+    formData.append("description", description);
+
+    try {
+      const response = await fetch("http://localhost:5001/api/torrents/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Upload failed");
+      }
+
+      const data = await response.json();
+      setUploadSuccess(true);
+      setMagnetLink(data.torrent.magnetURI);
+      toast({
+        title: "Upload Successful",
+        description: "Your file has been converted to a torrent and is now seeding.",
+      });
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast({
+        title: "Upload Failed",
+        description: "There was an error uploading your file. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen py-24 px-4">
       <div className="max-w-5xl mx-auto">
@@ -23,23 +92,88 @@ const Contribute = () => {
         />
 
         {/* Upload Section */}
-        <Card className="p-12 mb-16 border-2 border-dashed border-border hover:border-accent transition-colors">
-          <div className="text-center">
-            <div className="inline-flex p-6 bg-accent/10 rounded-full mb-6">
-              <Upload className="w-12 h-12 text-accent" />
+        <Card className="p-8 md:p-12 mb-16 border-2 border-dashed border-border hover:border-accent transition-colors">
+          {!uploadSuccess ? (
+            <form onSubmit={handleUpload} className="space-y-6 max-w-2xl mx-auto">
+              <div className="text-center mb-8">
+                <div className="inline-flex p-6 bg-accent/10 rounded-full mb-6">
+                  <Upload className="w-12 h-12 text-accent" />
+                </div>
+                <h2 className="text-3xl font-display font-bold mb-2">Upload Files</h2>
+                <p className="text-muted-foreground">
+                  Select a file to generate a torrent and magnet link automatically.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="file">File</Label>
+                <Input id="file" type="file" onChange={handleFileChange} className="cursor-pointer" />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="title">Title</Label>
+                <Input 
+                  id="title" 
+                  value={title} 
+                  onChange={(e) => setTitle(e.target.value)} 
+                  placeholder="Enter a descriptive title"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea 
+                  id="description" 
+                  value={description} 
+                  onChange={(e) => setDescription(e.target.value)} 
+                  placeholder="Describe the content..."
+                  rows={4}
+                />
+              </div>
+
+              <Button type="submit" size="lg" className="w-full text-lg" disabled={isUploading}>
+                {isUploading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing & Seeding...
+                  </>
+                ) : (
+                  "Upload & Create Torrent"
+                )}
+              </Button>
+            </form>
+          ) : (
+            <div className="text-center space-y-6 animate-in fade-in zoom-in duration-500">
+              <div className="inline-flex p-6 bg-green-100 rounded-full text-green-600 mb-4">
+                <CheckCircle className="w-16 h-16" />
+              </div>
+              <h2 className="text-3xl font-display font-bold">Upload Complete!</h2>
+              <p className="text-xl text-muted-foreground">
+                Your file is now part of the decentralized network.
+              </p>
+              
+              <div className="bg-muted p-4 rounded-lg text-left break-all font-mono text-sm">
+                <p className="font-bold mb-2 text-xs uppercase tracking-wider text-muted-foreground">Magnet Link:</p>
+                {magnetLink}
+              </div>
+
+              <div className="flex gap-4 justify-center">
+                <Button onClick={() => {
+                  setUploadSuccess(false);
+                  setFile(null);
+                  setTitle("");
+                  setDescription("");
+                  setMagnetLink("");
+                }} variant="outline">
+                  Upload Another
+                </Button>
+                <Button asChild>
+                  <a href="/library">Go to Library</a>
+                </Button>
+              </div>
             </div>
-            <h2 className="text-3xl font-display font-bold mb-4">Upload Files</h2>
-            <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Share any type of educational content - PDFs, books, research papers, software, 
-              videos, audio files, code, and more. No size limits, no restrictions.
-            </p>
-            <Button size="lg" className="text-lg">
-              Select Files to Upload
-            </Button>
-            <p className="text-sm text-muted-foreground mt-4">
-              File upload functionality requires backend setup
-            </p>
-          </div>
+          )}
         </Card>
 
         {/* What You Can Share */}

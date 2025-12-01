@@ -12,9 +12,15 @@
   "license": "MIT",
   "dependencies": {
     "cors": "^2.8.5",
+    "create-torrent": "^5.0.9",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "mongoose": "^8.3.2"
+    "fs-extra": "^11.3.2",
+    "magnet-uri": "^7.0.7",
+    "mongoose": "^8.3.2",
+    "multer": "^2.0.2",
+    "parse-torrent": "^9.1.5",
+    "webtorrent": "^2.8.5"
   },
   "devDependencies": {
     "nodemon": "^3.1.0"
