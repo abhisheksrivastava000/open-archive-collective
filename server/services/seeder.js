@@ -18,7 +18,24 @@ const seedFile = async (filePath) => {
   });
 };
 
+const reseedAll = async (torrents) => {
+  console.log('Reseeding all torrents...');
+  const path = require('path');
+  for (const torrent of torrents) {
+    if (torrent.storedFilename) {
+      const filePath = path.join(__dirname, '../uploads', torrent.storedFilename);
+      try {
+        await seedFile(filePath);
+        console.log(`Reseeded: ${torrent.title}`);
+      } catch (err) {
+        console.error(`Failed to reseed ${torrent.title}:`, err.message);
+      }
+    }
+  }
+};
+
 module.exports = {
   seedFile,
   getClient,
+  reseedAll
 };

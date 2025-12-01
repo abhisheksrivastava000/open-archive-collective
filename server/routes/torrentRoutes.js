@@ -69,6 +69,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
         infoHash: parsedTorrent.infoHash,
         magnetURI: magnetURI,
         fileName: req.file.originalname,
+        storedFilename: req.file.filename,
         fileSize: req.file.size,
         category: category || 'other',
       });
