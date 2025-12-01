@@ -133,7 +133,7 @@ const Library = () => {
                       </Button>
                     )}
                     <Button variant="ghost" size="sm" asChild title="Download Magnet Link">
-                      <a href={torrent.magnetURI}>
+                      <a href={torrent.magnetURI} target="_blank" rel="noopener noreferrer">
                         <Magnet className="w-4 h-4 mr-2" />
                         Magnet
                       </a>
@@ -141,7 +141,7 @@ const Library = () => {
                     
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button variant="outline" size="sm">
+                        <Button variant="ghost" size="sm">
                           <Play className="w-4 h-4 mr-2" />
                           Stream
                         </Button>
