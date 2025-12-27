@@ -7,9 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import QuoteBlock from "@/components/QuoteBlock";
+import { useWebTorrent } from "@/hooks/useWebTorrent";
 
 const Contribute = () => {
   const { toast } = useToast();
+  const client = useWebTorrent();
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -38,39 +40,62 @@ const Contribute = () => {
       return;
     }
 
-    setIsUploading(true);
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("title", title);
-    formData.append("description", description);
-
-    try {
-      const response = await fetch("http://localhost:5001/api/torrents/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error("Upload failed");
-      }
-
-      const data = await response.json();
-      setUploadSuccess(true);
-      setMagnetLink(data.torrent.magnetURI);
+    if (!client) {
       toast({
-        title: "Upload Successful",
-        description: "Your file has been converted to a torrent and is now seeding.",
-      });
-    } catch (error) {
-      console.error("Upload error:", error);
-      toast({
-        title: "Upload Failed",
-        description: "There was an error uploading your file. Please try again.",
+        title: "Client not ready",
+        description: "WebTorrent client is initializing. Please try again in a moment.",
         variant: "destructive",
       });
-    } finally {
-      setIsUploading(false);
+      return;
     }
+
+    setIsUploading(true);
+
+    // Seed the file client-side
+    client.seed(file, async (torrent) => {
+      console.log('Client is seeding:', torrent.infoHash);
+
+      const payload = {
+        title,
+        description,
+        magnetURI: torrent.magnetURI,
+        infoHash: torrent.infoHash,
+        fileName: file.name,
+        fileSize: file.size,
+        category: 'other'
+      };
+
+      try {
+        const response = await fetch("http://localhost:5001/api/torrents/upload", {
+          method: "POST",
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          throw new Error("Upload failed");
+        }
+
+        const data = await response.json();
+        setUploadSuccess(true);
+        setMagnetLink(data.torrent.magnetURI);
+        toast({
+          title: "Upload Successful",
+          description: "You are now seeding this file. Please keep this tab open to share it!",
+        });
+      } catch (error) {
+        console.error("Upload error:", error);
+        toast({
+          title: "Upload Failed",
+          description: "There was an error uploading your file metadata. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsUploading(false);
+      }
+    });
   };
 
   return (
