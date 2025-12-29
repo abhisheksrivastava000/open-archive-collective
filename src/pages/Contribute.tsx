@@ -18,6 +18,17 @@ const Contribute = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [magnetLink, setMagnetLink] = useState("");
+  const [activeSeeds, setActiveSeeds] = useState<any[]>([]);
+
+  // Update active seeds list
+  useState(() => {
+    const interval = setInterval(() => {
+      if (client) {
+        setActiveSeeds(client.torrents);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -126,7 +137,7 @@ const Contribute = () => {
                 </div>
                 <h2 className="text-3xl font-display font-bold mb-2">Upload Files</h2>
                 <p className="text-muted-foreground">
-                  Select a file to generate a torrent. The server will seed it automatically (Hybrid Mode).
+                  Select a file to generate a torrent. You are the <strong>First Peer</strong>. You must keep this tab open to seed.
                 </p>
               </div>
 
@@ -174,6 +185,10 @@ const Contribute = () => {
                 <CheckCircle className="w-16 h-16" />
               </div>
               <h2 className="text-3xl font-display font-bold">Upload Complete!</h2>
+              <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4 text-left">
+                <p className="font-bold">⚠️ Important: You are the First Peer</p>
+                <p>You must keep this browser tab open to seed the file until at least one other person has downloaded it. If you close this tab, the file will become unavailable.</p>
+              </div>
               <p className="text-xl text-muted-foreground">
                 Your file is now part of the decentralized network.
               </p>
@@ -200,6 +215,33 @@ const Contribute = () => {
             </div>
           )}
         </Card>
+
+        {/* Active Seeds Section */}
+        {activeSeeds.length > 0 && (
+          <div className="mb-16">
+            <h2 className="text-3xl font-display font-bold mb-8 text-center">
+              Your Active Seeds ({activeSeeds.length})
+            </h2>
+            <div className="grid gap-4">
+              {activeSeeds.map((torrent) => (
+                <Card key={torrent.infoHash} className="p-6">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="font-bold text-lg">{torrent.name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Peers: {torrent.numPeers} | Upload Speed: {(torrent.uploadSpeed / 1024 / 1024).toFixed(2)} MB/s
+                      </p>
+                    </div>
+                    <div className="text-green-600 flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Seeding
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* What You Can Share */}
         <div className="mb-16">

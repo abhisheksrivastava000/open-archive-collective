@@ -9,10 +9,8 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static('uploads'));
 
 const Torrent = require('./models/Torrent');
-// const { reseedAll } = require('./services/seeder');
 
 // Database Connection
 mongoose.connect(process.env.MONGODB_URI)

@@ -20,7 +20,6 @@ router.post('/upload', async (req, res) => {
       infoHash,
       fileName,
       fileSize,
-      storedFilename: 'p2p-only', // No file stored on server
       uploadedBy: 'anonymous', // TODO: Add user auth
     });
 

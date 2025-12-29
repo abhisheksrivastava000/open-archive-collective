@@ -21,10 +21,6 @@ const torrentSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  storedFilename: {
-    type: String,
-    required: true,
-  },
   fileSize: {
     type: Number,
     required: true,
