@@ -6,20 +6,20 @@ The **Open Archive Collective** is a decentralized, peer-to-peer (P2P) platform 
 
 ## 🚀 How It Works
 
-The platform operates on a **Hybrid P2P Architecture**:
+The platform operates on a **Pure P2P Architecture** (similar to The Pirate Bay):
 
-1.  **Decentralized Distribution**: Files are shared using the [WebTorrent](https://webtorrent.io/) protocol. When a user views a file, they become a "peer," helping to seed that file to others.
-2.  **Server-Side Persistence (Hybrid Mode)**: To ensure availability even when no peers are online, the central server acts as a permanent "Super Seeder." It stores uploaded files and seeds them via WebTorrent 24/7.
-3.  **Direct Access**: For users behind restrictive firewalls or without P2P capabilities, files are also available via direct HTTP download from the server.
+1.  **Client-Side Seeding**: Files are never uploaded to the server. Instead, they reside on the uploader's device. The uploader's browser acts as the initial "seed".
+2.  **Metadata Indexing**: The central server acts only as a directory. It stores the **Magnet Link**, **Info Hash**, and metadata (title, description), but not the file itself.
+3.  **Decentralized Distribution**: When a user wants a file, their browser connects directly to the uploader (and other peers) via [WebTorrent](https://webtorrent.io/) over WebRTC to download the content.
 
 ## ✨ Features
 
 - **📚 Knowledge Library**: A searchable, open-access catalog of books, papers, and tools.
 - **⚡ P2P Streaming**: Stream video and audio content directly in the browser via WebTorrent.
-- **🛡️ Hybrid Seeding**: Files are seeded by both the server and connected clients, maximizing availability and speed.
-- **💾 Direct Downloads**: Fallback HTTP download links for instant access.
+- **🌐 True Decentralization**: Content is hosted by the community. If the server goes down, the files still exist on user devices.
+- **🚫 Zero-Knowledge Server**: The server has no knowledge of the file contents, only their cryptographic hashes.
 - **📢 Manifesto**: A declaration of our core values: Universal Access, Freedom First, and Privacy.
-- **📤 Contribute**: Easy-to-use interface for uploading and "torrent-izing" content.
+- **📤 Contribute**: Contribute by seeding files directly from your browser. Keep the tab open to keep the file alive!
 
 ## 🛠️ Tech Stack
 
@@ -34,9 +34,8 @@ The platform operates on a **Hybrid P2P Architecture**:
 ### Backend
 
 - **Runtime**: Node.js & Express
-- **P2P Engine**: `webtorrent` (Node Client) + `create-torrent`
 - **Database**: MongoDB (Metadata & Magnet Links)
-- **Storage**: Local filesystem (served statically & seeded)
+- **Architecture**: Lightweight REST API (No file storage)
 
 ## 🏁 Getting Started
 
@@ -85,7 +84,7 @@ You need to run both the backend (tracker/seeder) and the frontend.
 cd server
 npm run dev
 # Server runs on http://localhost:5001
-# Files are served at http://localhost:5001/uploads/
+# Acts as a metadata index only
 ```
 
 **2. Start the Frontend**

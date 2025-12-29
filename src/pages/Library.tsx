@@ -13,7 +13,6 @@ interface Torrent {
   title: string;
   description: string;
   fileName: string;
-  storedFilename?: string;
   fileSize: number;
   magnetURI: string;
   createdAt: string;
@@ -120,18 +119,6 @@ const Library = () => {
                     {formatSize(torrent.fileSize)}
                   </span>
                   <div className="flex gap-2">
-                    {torrent.storedFilename && (
-                      <Button variant="ghost" size="sm" asChild title="Direct Download">
-                        <a 
-                          href={`http://localhost:5001/uploads/${torrent.storedFilename}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <Download className="w-4 h-4 mr-2" />
-                          Direct
-                        </a>
-                      </Button>
-                    )}
                     <Button variant="ghost" size="sm" asChild title="Download Magnet Link">
                       <a href={torrent.magnetURI} target="_blank" rel="noopener noreferrer">
                         <Magnet className="w-4 h-4 mr-2" />

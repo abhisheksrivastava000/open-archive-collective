@@ -7,15 +7,28 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import QuoteBlock from "@/components/QuoteBlock";
+import { useWebTorrent } from "@/hooks/useWebTorrent";
 
 const Contribute = () => {
   const { toast } = useToast();
+  const client = useWebTorrent();
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [magnetLink, setMagnetLink] = useState("");
+  const [activeSeeds, setActiveSeeds] = useState<any[]>([]);
+
+  // Update active seeds list
+  useState(() => {
+    const interval = setInterval(() => {
+      if (client) {
+        setActiveSeeds(client.torrents);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -38,39 +51,62 @@ const Contribute = () => {
       return;
     }
 
-    setIsUploading(true);
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("title", title);
-    formData.append("description", description);
-
-    try {
-      const response = await fetch("http://localhost:5001/api/torrents/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error("Upload failed");
-      }
-
-      const data = await response.json();
-      setUploadSuccess(true);
-      setMagnetLink(data.torrent.magnetURI);
+    if (!client) {
       toast({
-        title: "Upload Successful",
-        description: "Your file has been converted to a torrent and is now seeding.",
-      });
-    } catch (error) {
-      console.error("Upload error:", error);
-      toast({
-        title: "Upload Failed",
-        description: "There was an error uploading your file. Please try again.",
+        title: "Client not ready",
+        description: "WebTorrent client is initializing. Please try again in a moment.",
         variant: "destructive",
       });
-    } finally {
-      setIsUploading(false);
+      return;
     }
+
+    setIsUploading(true);
+
+    // Seed the file client-side
+    client.seed(file, async (torrent) => {
+      console.log('Client is seeding:', torrent.infoHash);
+
+      const payload = {
+        title,
+        description,
+        magnetURI: torrent.magnetURI,
+        infoHash: torrent.infoHash,
+        fileName: file.name,
+        fileSize: file.size,
+        category: 'other'
+      };
+
+      try {
+        const response = await fetch("http://localhost:5001/api/torrents/upload", {
+          method: "POST",
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          throw new Error("Upload failed");
+        }
+
+        const data = await response.json();
+        setUploadSuccess(true);
+        setMagnetLink(data.torrent.magnetURI);
+        toast({
+          title: "Upload Successful",
+          description: "You are now seeding this file. Please keep this tab open to share it!",
+        });
+      } catch (error) {
+        console.error("Upload error:", error);
+        toast({
+          title: "Upload Failed",
+          description: "There was an error uploading your file metadata. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsUploading(false);
+      }
+    });
   };
 
   return (
@@ -101,7 +137,7 @@ const Contribute = () => {
                 </div>
                 <h2 className="text-3xl font-display font-bold mb-2">Upload Files</h2>
                 <p className="text-muted-foreground">
-                  Select a file to generate a torrent. The server will seed it automatically (Hybrid Mode).
+                  Select a file to generate a torrent. You are the <strong>First Peer</strong>. You must keep this tab open to seed.
                 </p>
               </div>
 
@@ -149,6 +185,10 @@ const Contribute = () => {
                 <CheckCircle className="w-16 h-16" />
               </div>
               <h2 className="text-3xl font-display font-bold">Upload Complete!</h2>
+              <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4 text-left">
+                <p className="font-bold">⚠️ Important: You are the First Peer</p>
+                <p>You must keep this browser tab open to seed the file until at least one other person has downloaded it. If you close this tab, the file will become unavailable.</p>
+              </div>
               <p className="text-xl text-muted-foreground">
                 Your file is now part of the decentralized network.
               </p>
@@ -175,6 +215,33 @@ const Contribute = () => {
             </div>
           )}
         </Card>
+
+        {/* Active Seeds Section */}
+        {activeSeeds.length > 0 && (
+          <div className="mb-16">
+            <h2 className="text-3xl font-display font-bold mb-8 text-center">
+              Your Active Seeds ({activeSeeds.length})
+            </h2>
+            <div className="grid gap-4">
+              {activeSeeds.map((torrent) => (
+                <Card key={torrent.infoHash} className="p-6">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="font-bold text-lg">{torrent.name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Peers: {torrent.numPeers} | Upload Speed: {(torrent.uploadSpeed / 1024 / 1024).toFixed(2)} MB/s
+                      </p>
+                    </div>
+                    <div className="text-green-600 flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Seeding
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* What You Can Share */}
         <div className="mb-16">
