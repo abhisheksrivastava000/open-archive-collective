@@ -30,7 +30,7 @@ const Library = () => {
 
   const fetchTorrents = async () => {
     try {
-      const response = await fetch("http://localhost:5001/api/torrents");
+      const response = await fetch("http://localhost:3001/api/torrents");
       if (!response.ok) throw new Error("Failed to fetch");
       const data = await response.json();
       setTorrents(data);
