@@ -70,7 +70,7 @@ The platform operates on a **Pure P2P Architecture** (similar to The Pirate Bay)
 Create a `.env` file in the `server/` directory:
 
 ```env
-PORT=5001
+PORT=3001
 MONGODB_URI=mongodb://localhost:27017/open-archive-collective
 ```
 
@@ -83,7 +83,7 @@ You need to run both the backend (tracker/seeder) and the frontend.
 ```bash
 cd server
 npm run dev
-# Server runs on http://localhost:5001
+# Server runs on http://localhost:3001
 # Acts as a metadata index only
 ```
 
@@ -102,8 +102,6 @@ npm run dev
 ├── server/                 # Backend Node.js Application
 │   ├── models/             # Mongoose Schemas (Torrent metadata)
 │   ├── routes/             # API Routes (Uploads, Listing)
-│   ├── services/           # Seeder Service (WebTorrent logic)
-│   ├── uploads/            # Physical file storage
 │   └── index.js            # Server entry point
 ├── src/                    # Frontend React Application
 │   ├── components/         # UI Components (TorrentPlayer, etc.)
