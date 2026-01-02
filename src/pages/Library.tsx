@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FileText, Download, Search, Loader2, Magnet, Play } from "lucide-react";
+import { FileText, Download, Search, Loader2, Magnet, Play, ArrowUp, ArrowDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,8 @@ interface Torrent {
   fileSize: number;
   magnetURI: string;
   createdAt: string;
+  seeders: number;
+  leechers: number;
 }
 
 const Library = () => {
@@ -114,11 +116,22 @@ const Library = () => {
                   </div>
                 </div>
                 
-                <div className="mt-auto pt-4 border-t border-border flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground font-mono">
-                    {formatSize(torrent.fileSize)}
-                  </span>
-                  <div className="flex gap-2">
+                <div className="mt-auto pt-4 border-t border-border flex flex-col gap-3">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground font-mono">
+                    <span>{formatSize(torrent.fileSize)}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="flex items-center text-green-600" title="Seeders">
+                        <ArrowUp className="w-3 h-3 mr-1" />
+                        {torrent.seeders || 0}
+                      </span>
+                      <span className="flex items-center text-orange-600" title="Leechers">
+                        <ArrowDown className="w-3 h-3 mr-1" />
+                        {torrent.leechers || 0}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2 justify-end">
                     <Button variant="ghost" size="sm" asChild title="Download Magnet Link">
                       <a href={torrent.magnetURI} target="_blank" rel="noopener noreferrer">
                         <Magnet className="w-4 h-4 mr-2" />

@@ -20,6 +20,8 @@ router.post('/upload', async (req, res) => {
       infoHash,
       fileName,
       fileSize,
+      seeders: 1, // Initial uploader is the first seeder
+      leechers: 0,
       uploadedBy: 'anonymous', // TODO: Add user auth
     });
 

@@ -25,6 +25,14 @@ const torrentSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  seeders: {
+    type: Number,
+    default: 0,
+  },
+  leechers: {
+    type: Number,
+    default: 0,
+  },
   category: {
     type: String,
     default: 'other',
