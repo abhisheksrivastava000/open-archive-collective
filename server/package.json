@@ -11,6 +11,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "bittorrent-tracker": "^11.2.2",
     "cors": "^2.8.5",
     "create-torrent": "^5.0.9",
     "dotenv": "^16.4.5",
@@ -20,6 +21,7 @@
     "mongoose": "^8.3.2",
     "multer": "^2.0.2",
     "parse-torrent": "^9.1.5",
+    "socket.io": "^4.8.3",
     "webtorrent": "^2.8.5"
   },
   "devDependencies": {

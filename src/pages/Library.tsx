@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { io } from "socket.io-client";
 import { FileText, Download, Search, Loader2, Magnet, Play, ArrowUp, ArrowDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -28,6 +29,32 @@ const Library = () => {
 
   useEffect(() => {
     fetchTorrents();
+
+    const socket = io("http://localhost:3001");
+
+    socket.on("connect", () => {
+      console.log("Connected to socket server");
+    });
+
+    socket.on("torrent-updated", (updatedTorrent: { _id: string, seeders: number, leechers: number }) => {
+      setTorrents(prev => prev.map(t => 
+        t._id === updatedTorrent._id 
+          ? { ...t, seeders: updatedTorrent.seeders, leechers: updatedTorrent.leechers } 
+          : t
+      ));
+    });
+
+    socket.on("torrent-deleted", (deletedId: string) => {
+      setTorrents(prev => prev.filter(t => t._id !== deletedId));
+      toast({
+        title: "Torrent Removed",
+        description: "A torrent was removed because it had no seeders.",
+      });
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   const fetchTorrents = async () => {

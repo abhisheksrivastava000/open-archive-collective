@@ -2,6 +2,9 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const http = require('http');
+const { Server } = require('socket.io');
+const { checkTorrents } = require('./services/torrentHealth');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -10,12 +13,26 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-const Torrent = require('./models/Torrent');
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
 
 // Database Connection
 mongoose.connect(process.env.MONGODB_URI)
   .then(async () => {
     console.log('Connected to MongoDB');
+    
+    // Start health check interval (every 60 seconds)
+    setInterval(() => {
+      checkTorrents(io);
+    }, 60000);
+    
+    // Run once immediately on startup
+    checkTorrents(io);
   })
   .catch((err) => console.error('MongoDB connection error:', err));
 
@@ -27,7 +44,14 @@ app.get('/', (req, res) => {
   res.send('Open Archive Collective API is running');
 });
 
+io.on('connection', (socket) => {
+  console.log('Client connected');
+  socket.on('disconnect', () => {
+    console.log('Client disconnected');
+  });
+});
+
 // Start Server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
