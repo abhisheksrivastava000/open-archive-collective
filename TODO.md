@@ -1,19 +1,21 @@
 # Project TODOs
 
+## Priority Improvements
+
+- [ ] **Authentication**: Implement user registration and login (JWT) to secure uploads.
+- [ ] **Search & Filtering**: Add search functionality to the frontend and backend to filter torrents by title, category, or tags.
+- [ ] **Pagination**: Implement pagination for the torrent list to improve performance with large datasets.
+- [ ] **Validation**: Add stricter validation for magnet URIs and metadata on the backend.
+- [ ] **Testing**: Add unit and integration tests for both frontend (Vitest) and backend (Jest/Supertest).
+
+## P2P & Backend
+
+- [ ] **WebTorrent Hybrid**: Implement `webtorrent-hybrid` in the backend to allow the server to act as a permanent seed for uploaded content.
+- [ ] **Trackers**: Run a dedicated `bittorrent-tracker` instance for better privacy, reliability, and faster peer discovery.
+- [ ] **File Uploads**: Consider adding direct file upload support (to S3/MinIO or local storage) and automatically generating web seeds.
+
 ## Production Readiness
 
-- [ ] **Web Seed URL**: In `server/routes/torrentRoutes.js`, change `http://localhost:5001` to your production domain/IP.
-- [ ] **Storage**: Currently files are stored in `server/uploads`. Ensure this directory is persistent (e.g., Docker volume).
-- [ ] **Cleanup**: Implement a cron job to clean up old files if storage is limited, or implement a quota system.
-- [ ] **Security**: Add authentication for uploads. Currently, anyone can upload.
-- [ ] **Validation**: Add file type and size validation in `multer` configuration.
-
-## P2P Improvements
-
-- [ ] **WebTorrent Hybrid**: Investigate using `webtorrent-hybrid` in the backend to allow direct WebRTC connections between server and browser peers, reducing reliance on web seeds.
-- [ ] **Trackers**: Run your own `bittorrent-tracker` instance for better privacy and reliability.
-
-## Frontend
-
-- [ ] **Streaming Player**: Implement a video player using `webtorrent` client-side to stream video content directly in the browser.
-- [ ] **Download Progress**: Show download progress when a user clicks "Download" (if using client-side download).
+- [ ] **CI/CD**: Setup GitHub Actions for automated testing and deployment.
+- [ ] **Docker Optimization**: Optimize Dockerfiles for production (multi-stage builds).
+- [ ] **Error Handling**: Improve error boundaries and user feedback (toast notifications) across the app.
