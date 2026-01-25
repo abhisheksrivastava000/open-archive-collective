@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Upload, FileText, HardDrive, Loader2, CheckCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import QuoteBlock from "@/components/QuoteBlock";
 import { useWebTorrent } from "@/hooks/useWebTorrent";
+import { getApiUrl, TRACKERS } from "@/lib/utils";
 
 const Contribute = () => {
   const { toast } = useToast();
@@ -21,14 +22,14 @@ const Contribute = () => {
   const [activeSeeds, setActiveSeeds] = useState<any[]>([]);
 
   // Update active seeds list
-  useState(() => {
+  useEffect(() => {
     const interval = setInterval(() => {
       if (client) {
         setActiveSeeds(client.torrents);
       }
     }, 1000);
     return () => clearInterval(interval);
-  });
+  }, [client]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -63,7 +64,7 @@ const Contribute = () => {
     setIsUploading(true);
 
     // Seed the file client-side
-    client.seed(file, async (torrent) => {
+    client.seed(file, { announce: TRACKERS }, async (torrent) => {
       console.log('Client is seeding:', torrent.infoHash);
 
       const payload = {
@@ -77,7 +78,7 @@ const Contribute = () => {
       };
 
       try {
-        const response = await fetch("http://localhost:3001/api/torrents/upload", {
+        const response = await fetch(`${getApiUrl()}/api/torrents/upload`, {
           method: "POST",
           headers: {
             'Content-Type': 'application/json'

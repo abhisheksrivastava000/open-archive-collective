@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import QuoteBlock from "@/components/QuoteBlock";
 import { useToast } from "@/hooks/use-toast";
 import TorrentPlayer from "@/components/TorrentPlayer";
+import { getApiUrl } from "@/lib/utils";
 
 interface Torrent {
   _id: string;
@@ -30,7 +31,7 @@ const Library = () => {
   useEffect(() => {
     fetchTorrents();
 
-    const socket = io("http://localhost:3001", {
+    const socket = io(getApiUrl(), {
       transports: ["websocket"],
       reconnectionAttempts: 5,
     });
@@ -62,7 +63,7 @@ const Library = () => {
 
   const fetchTorrents = async () => {
     try {
-      const response = await fetch("http://localhost:3001/api/torrents");
+      const response = await fetch(`${getApiUrl()}/api/torrents`);
       if (!response.ok) throw new Error("Failed to fetch");
       const data = await response.json();
       setTorrents(data);
