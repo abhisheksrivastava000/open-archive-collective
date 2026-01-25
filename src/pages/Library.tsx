@@ -88,9 +88,8 @@ const Library = () => {
   };
 
   const filteredTorrents = torrents.filter(t => 
-    (t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    t.description.toLowerCase().includes(searchTerm.toLowerCase())) &&
-    t.seeders > 0
+    t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    t.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
