@@ -230,7 +230,7 @@ const Contribute = () => {
                     <div>
                       <h3 className="font-bold text-lg">{torrent.name}</h3>
                       <p className="text-sm text-muted-foreground">
-                        Peers: {torrent.numPeers} | Upload Speed: {(torrent.uploadSpeed / 1024 / 1024).toFixed(2)} MB/s
+                        Peers: {torrent.numPeers} (connected) | Upload Speed: {(torrent.uploadSpeed / 1024 / 1024).toFixed(2)} MB/s
                       </p>
                     </div>
                     <div className="text-green-600 flex items-center gap-2">
@@ -241,6 +241,9 @@ const Contribute = () => {
                 </Card>
               ))}
             </div>
+            <p className="text-center text-sm text-muted-foreground mt-4">
+              "0 Peers" is normal if no one is currently downloading. You are ready to upload!
+            </p>
           </div>
         )}
 
