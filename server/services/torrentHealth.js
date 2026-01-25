@@ -9,7 +9,7 @@ const getTorrentStats = async (infoHash, announce) => {
       announce: announce,
       peerId: Buffer.from('01234567890123456789'), // Dummy peerId
       port: 6881,
-      wrtc: {} // Disable WebRTC
+      wrtc: null // Disable WebRTC
     };
 
     const client = new Client(opts);
