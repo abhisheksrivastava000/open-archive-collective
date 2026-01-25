@@ -32,12 +32,12 @@ const Library = () => {
     fetchTorrents();
 
     const socket = io(getApiUrl(), {
-      transports: ["websocket"],
       reconnectionAttempts: 5,
+      // transports: ["websocket"], // Allow polling fallback to prevent transport close issues
     });
 
     socket.on("connect", () => {
-      console.log("Connected to socket server");
+      console.log("Connected to socket server with ID:", socket.id);
     });
 
     socket.on("torrent-updated", (updatedTorrent: { _id: string, seeders: number, leechers: number }) => {
