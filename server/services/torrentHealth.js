@@ -52,21 +52,27 @@ const checkTorrents = async (io) => {
       const parsed = decode(torrent.magnetURI);
       const trackers = parsed.announce || [];
       
-      if (trackers.length === 0) continue;
+      // Filter out websocket trackers to prevent WebRTC polyfill issues
+      const httpTrackers = trackers.filter(t => !t.startsWith('ws://') && !t.startsWith('wss://'));
 
-      const stats = await getTorrentStats(torrent.infoHash, trackers);
+      if (httpTrackers.length === 0) continue;
+
+      const stats = await getTorrentStats(torrent.infoHash, httpTrackers);
       
       if (stats) {
         // Only update if we got a valid response
         // If stats are 0, it might be a failure to scrape, or actually 0.
         // But if responded is true, it means we got a response.
         
-        // Check if we should delete
+        // DO NOT DELETE dead torrents for now, just update stats
+        /*
         if (stats.seeders === 0) {
           console.log(`Deleting dead torrent: ${torrent.title} (${torrent._id})`);
           await Torrent.findByIdAndDelete(torrent._id);
           io.emit('torrent-deleted', torrent._id);
         } else {
+        */
+        if (true) {
           // Update if changed
           if (torrent.seeders !== stats.seeders || torrent.leechers !== stats.leechers) {
             torrent.seeders = stats.seeders;
@@ -80,6 +86,7 @@ const checkTorrents = async (io) => {
             });
           }
         }
+        // }
       }
     }
   } catch (err) {

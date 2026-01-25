@@ -30,7 +30,10 @@ const Library = () => {
   useEffect(() => {
     fetchTorrents();
 
-    const socket = io("http://localhost:3001");
+    const socket = io("http://localhost:3001", {
+      transports: ["websocket"],
+      reconnectionAttempts: 5,
+    });
 
     socket.on("connect", () => {
       console.log("Connected to socket server");

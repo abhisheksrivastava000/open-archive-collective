@@ -11,7 +11,28 @@ router.post('/upload', async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Create Torrent Record
+    // Check if torrent already exists
+    let torrent = await Torrent.findOne({ infoHash });
+
+    if (torrent) {
+      // Update existing torrent metadata
+      torrent.title = title;
+      torrent.description = description;
+      torrent.category = category || 'other';
+      torrent.magnetURI = magnetURI;
+      torrent.fileName = fileName;
+      torrent.fileSize = fileSize;
+      torrent.uploadedBy = 'anonymous'; // TODO: Update if auth added
+      
+      await torrent.save();
+      
+      return res.status(200).json({
+        message: 'Torrent metadata updated successfully',
+        torrent: torrent,
+      });
+    }
+
+    // Create New Torrent Record
     const newTorrent = new Torrent({
       title,
       description,
@@ -33,9 +54,6 @@ router.post('/upload', async (req, res) => {
     });
   } catch (err) {
     console.error('Error uploading torrent metadata:', err);
-    if (err.code === 11000) {
-      return res.status(400).json({ error: 'Torrent already exists' });
-    }
     res.status(500).json({ error: 'Server error' });
   }
 });
