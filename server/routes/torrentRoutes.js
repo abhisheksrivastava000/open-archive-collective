@@ -1,9 +1,24 @@
 const express = require('express');
 const router = express.Router();
 const Torrent = require('../models/Torrent');
+const multer = require('multer');
+const path = require('path');
+const { seedFile, DOWNLOAD_PATH } = require('../services/torrentSeeder');
 
-// Upload Route (Metadata only)
-router.post('/upload', async (req, res) => {
+// Configure Multer for file upload
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, DOWNLOAD_PATH);
+  },
+  filename: (req, file, cb) => {
+    // Keep original filename to match metadata
+    cb(null, file.originalname); 
+  }
+});
+const upload = multer({ storage: storage });
+
+// Upload Route (File + Metadata)
+router.post('/upload', upload.single('file'), async (req, res) => {
   try {
     const { title, description, category, magnetURI, infoHash, fileName, fileSize } = req.body;
 
@@ -20,14 +35,19 @@ router.post('/upload', async (req, res) => {
       torrent.description = description;
       torrent.category = category || 'other';
       torrent.magnetURI = magnetURI;
-      torrent.fileName = fileName;
-      torrent.fileSize = fileSize;
-      torrent.uploadedBy = 'anonymous'; // TODO: Update if auth added
+      if (fileName) torrent.fileName = fileName;
+      if (fileSize) torrent.fileSize = fileSize;
+      torrent.uploadedBy = 'anonymous'; 
       
       await torrent.save();
+
+      // Seed if file uploaded
+      if (req.file) {
+        await seedFile(req.file.path, torrent);
+      }
       
       return res.status(200).json({
-        message: 'Torrent metadata updated successfully',
+        message: 'Torrent updated and seeding initiated',
         torrent: torrent,
       });
     }
@@ -39,21 +59,26 @@ router.post('/upload', async (req, res) => {
       category: category || 'other',
       magnetURI,
       infoHash,
-      fileName,
-      fileSize,
-      seeders: 1, // Initial uploader is the first seeder
+      fileName: fileName || (req.file ? req.file.originalname : 'unknown'),
+      fileSize: fileSize || (req.file ? req.file.size : 0),
+      seeders: 1, 
       leechers: 0,
-      uploadedBy: 'anonymous', // TODO: Add user auth
+      uploadedBy: 'anonymous', 
     });
 
     await newTorrent.save();
 
+    // Seed if file uploaded
+    if (req.file) {
+      await seedFile(req.file.path, newTorrent);
+    }
+
     res.status(201).json({
-      message: 'Torrent metadata uploaded successfully',
+      message: 'Torrent uploaded and seeding initiated',
       torrent: newTorrent,
     });
   } catch (err) {
-    console.error('Error uploading torrent metadata:', err);
+    console.error('Error uploading torrent:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });

@@ -5,6 +5,8 @@ const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
 const { checkTorrents } = require('./services/torrentHealth');
+const { restoreTorrents } = require('./services/torrentSeeder');
+const Torrent = require('./models/Torrent');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -28,6 +30,9 @@ mongoose.connect(process.env.MONGODB_URI)
   .then(async () => {
     console.log('Connected to MongoDB');
     
+    // Restore existing torrents to seeding state
+    restoreTorrents(Torrent);
+
     // Start health check interval (every 60 seconds)
     setInterval(() => {
       checkTorrents(io);
