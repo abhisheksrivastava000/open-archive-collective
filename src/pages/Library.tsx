@@ -164,24 +164,6 @@ const Library = () => {
   );
 
   return (
-                      variant="default" 
-                      size="sm" 
-                      onClick={() => handleDownload(torrent)}
-                      disabled={downloadingIds.has(torrent._id)}
-                    >
-                      {downloadingIds.has(torrent._id) ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Downloading...
-                        </>
-                      ) : (
-                        <>
-                          <Download className="w-4 h-4 mr-2" />
-                          Download
-                        </>
-                      )}
-                    </Button>
-                    <Button 
     <div className="min-h-screen py-24 px-4">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-16">
@@ -252,6 +234,24 @@ const Library = () => {
                   </div>
                   
                   <div className="flex gap-2 justify-end">
+                    <Button 
+                      variant="default" 
+                      size="sm" 
+                      onClick={() => handleDownload(torrent)}
+                      disabled={downloadingIds.has(torrent._id)}
+                    >
+                      {downloadingIds.has(torrent._id) ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Downloading...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="w-4 h-4 mr-2" />
+                          Download
+                        </>
+                      )}
+                    </Button>
                     <Button variant="ghost" size="sm" asChild title="Download Magnet Link">
                       <a href={torrent.magnetURI} target="_blank" rel="noopener noreferrer">
                         <Magnet className="w-4 h-4 mr-2" />
