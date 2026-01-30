@@ -9,6 +9,8 @@ import QuoteBlock from "@/components/QuoteBlock";
 import { useToast } from "@/hooks/use-toast";
 import TorrentPlayer from "@/components/TorrentPlayer";
 import { getApiUrl } from "@/lib/utils";
+import { useWebTorrent } from "@/hooks/useWebTorrent";
+import type { Torrent as WebTorrentTorrent } from 'webtorrent';
 
 interface Torrent {
   _id: string;
@@ -27,6 +29,77 @@ const Library = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
+  const client = useWebTorrent();
+  const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
+
+  const handleDownload = (torrent: Torrent) => {
+    if (!client) {
+      toast({
+        title: "Client not ready",
+        description: "Please wait for WebTorrent to initialize.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (downloadingIds.has(torrent._id)) {
+      toast({
+        title: "Already downloading",
+        description: `"${torrent.title}" is already being downloaded.`,
+      });
+      return;
+    }
+
+    setDownloadingIds(prev => new Set(prev).add(torrent._id));
+    toast({
+      title: "Download Started",
+      description: `Starting download for "${torrent.title}". Please keep this tab open.`,
+    });
+
+    const onTorrentReady = (t: WebTorrentTorrent) => {
+      // Prioritize the largest file (likely the content)
+      const file = t.files.reduce((a, b) => a.length > b.length ? a : b);
+      
+      file.getBlob((err, blob) => {
+        setDownloadingIds(prev => {
+          const next = new Set(prev);
+          next.delete(torrent._id);
+          return next;
+        });
+
+        if (err || !blob) {
+          console.error("Download error:", err);
+          toast({
+            title: "Download Failed",
+            description: `Could not retrieve file for "${torrent.title}".`,
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = torrent.fileName || file.name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        toast({
+          title: "Download Complete",
+          description: `"${torrent.fileName}" has been saved to your device.`,
+        });
+      });
+    };
+
+    const existing = client.get(torrent.magnetURI);
+    if (existing) {
+      onTorrentReady(existing);
+    } else {
+      client.add(torrent.magnetURI, onTorrentReady);
+    }
+  };
 
   useEffect(() => {
     fetchTorrents();
@@ -91,6 +164,24 @@ const Library = () => {
   );
 
   return (
+                      variant="default" 
+                      size="sm" 
+                      onClick={() => handleDownload(torrent)}
+                      disabled={downloadingIds.has(torrent._id)}
+                    >
+                      {downloadingIds.has(torrent._id) ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Downloading...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="w-4 h-4 mr-2" />
+                          Download
+                        </>
+                      )}
+                    </Button>
+                    <Button 
     <div className="min-h-screen py-24 px-4">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-16">
