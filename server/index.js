@@ -4,9 +4,9 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
-const { checkTorrents } = require('./services/torrentHealth');
-const { restoreTorrents } = require('./services/torrentSeeder');
-const Torrent = require('./models/Torrent');
+// const { checkTorrents } = require('./services/torrentHealth'); // Removed
+// const { restoreTorrents } = require('./services/torrentSeeder'); // Removed
+// const Torrent = require('./models/Torrent'); // Removed as no longer used in index.js
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -30,16 +30,12 @@ mongoose.connect(process.env.MONGODB_URI)
   .then(async () => {
     console.log('Connected to MongoDB');
     
-    // Restore existing torrents to seeding state
-    restoreTorrents(Torrent);
-
-    // Start health check interval (every 60 seconds)
-    setInterval(() => {
-      checkTorrents(io);
-    }, 60000);
-    
-    // Run once immediately on startup
-    checkTorrents(io);
+    // Server no longer restores torrents or performs health checks
+    // restoreTorrents(Torrent); // Removed
+    // setInterval(() => { // Removed
+    //   checkTorrents(io); // Removed
+    // }, 60000); // Removed
+    // checkTorrents(io); // Removed
   })
   .catch((err) => console.error('MongoDB connection error:', err));
 

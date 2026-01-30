@@ -8,16 +8,16 @@ This document provides a step-by-step plan for implementing the features of the 
 *   **File:** `server/models/Torrent.js`
 *   **Task:** Ensure the Mongoose schema matches the data we need to store, including fields for `title`, `description`, `infoHash`, `magnetURI`, `fileName`, `fileSize`, `category`, and `uploadedBy`. The current model is already very close to what is needed.
 
-### Step 1.2: Update the Upload Route
+### Step 1.2: Update the Upload Route (Zero-Knowledge Server)
 *   **File:** `server/routes/torrentRoutes.js`
-*   **Task:** Modify the `POST /api/torrents/upload` endpoint to handle the metadata sent from the client. The client will create the torrent and magnet link, and the server will receive the metadata and the file. The server will then save the metadata to the database and start seeding the file.
+*   **Task:** Modify the `POST /api/torrents/upload` endpoint to *only* handle metadata sent from the client. The client will create the torrent, generate the magnet link, and extract necessary metadata (magnetURI, infoHash, fileName, fileSize, title, description, category). The server will then receive this metadata (as JSON, not a file upload) and save it to the database. The server will *not* receive or store the physical file, nor will it act as a seeder.
 
 ### Step 1.3: Enhance Real-time Communication
 *   **File:** `server/index.js`, `server/routes/torrentRoutes.js`
 *   **Task:**
     *   Integrate `socket.io` into the upload route.
-    *   When a new torrent is created, emit a `torrent:new` event to all connected clients with the new torrent's data.
-    *   In the `torrentHealth.js` service, when the number of seeders or leechers for a torrent changes, emit a `torrent:update` event.
+    *   When a new torrent's metadata is successfully saved, emit a `torrent:new` event to all connected clients with the new torrent's data.
+    *   (Removed: Server no longer tracks or emits `torrent:update` for seeder/leecher counts directly.)
 
 ## Phase 2: Frontend Development
 
@@ -29,15 +29,15 @@ This document provides a step-by-step plan for implementing the features of the 
     *   On form submission:
         1.  Create a torrent from the selected file using `client.seed()`.
         2.  Once the torrent is created, extract the `magnetURI`, `infoHash`, `name` (for `fileName`), and `length` (for `fileSize`).
-        3.  Create a `FormData` object and append the file and the metadata.
-        4.  Make a `POST` request to the `/api/torrents/upload` endpoint with the `FormData`.
+        3.  Construct a JSON object with the extracted metadata (`title`, `description`, `magnetURI`, `infoHash`, `fileName`, `fileSize`, `category`).
+        4.  Make a `POST` request to the `/api/torrents/upload` endpoint with the JSON metadata (not `FormData` with a file).
         5.  Display progress and success/error messages to the user.
 
 ### Step 2.2: Build the Library Page
 *   **File:** `src/pages/Library.tsx`
 *   **Task:**
     *   Use `@tanstack/react-query` to fetch the list of torrents from the `/api/torrents` endpoint.
-    *   Display the torrents in a grid or list format. Each item should show the title, description, file size, and the number of seeders and leechers.
+    *   Display the torrents in a grid or list format. Each item should show the title, description, file size, and dynamic seeder/leecher counts (these counts will be observed client-side for active torrents, or remain 0 if not actively being downloaded by the current client).
     *   Implement a WebSocket listener to handle the `torrent:new` and `torrent:update` events and update the torrent list in real-time.
     *   Add a "Download" button to each torrent.
 
@@ -56,18 +56,18 @@ This document provides a step-by-step plan for implementing the features of the 
 
 ### Step 3.1: Frontend Testing
 *   **Task:**
-    *   Test the file upload and torrent creation process thoroughly.
+    *   Test the file upload and torrent creation process thoroughly (ensuring only metadata is sent to server).
     *   Verify that the library page displays all torrents correctly and updates in real-time.
     *   Test the download and streaming functionality with various file types.
     *   Ensure the UI is responsive and works well on different screen sizes.
 
-### Step 3.2: Backend Testing
+### Step 3.2: Backend Testing (Metadata Only)
 *   **Task:**
-    *   Write unit tests for the API endpoints (if time permits).
-    *   Test the server's seeding and torrent restoration functionality.
-    *   Verify that the WebSocket events are being emitted correctly.
+    *   Write unit tests for the API endpoints (if time permits), focusing on metadata storage and retrieval.
+    *   Verify that the WebSocket `torrent:new` events are being emitted correctly upon metadata submission.
+    *   (Removed: Server-side seeding and torrent restoration tests are no longer applicable.)
 
 ### Step 3.3: End-to-End Testing
 *   **Task:**
-    *   Perform end-to-end tests of the entire user flow, from uploading a file to downloading it on another client.
-    *   Test with multiple clients to ensure the P2P network is working as expected.
+    *   Perform end-to-end tests of the entire user flow, from uploading a file (client-side seeding and metadata submission) to downloading it on another client.
+    *   Test with multiple clients to ensure the P2P network is working as expected (client-to-client file transfer).

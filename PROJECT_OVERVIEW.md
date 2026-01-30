@@ -19,13 +19,12 @@ Once a file is uploaded and becomes a torrent, it is no longer solely dependent 
 ### 2.3. The Role of the Server
 The server plays a few key roles:
 *   **Metadata Storage:** It stores information about the torrents (title, description, info hash, etc.) in a MongoDB database, making it easy to browse the library of available content.
-*   **Initial Seeder:** When a file is first uploaded, the server acts as the first seeder, ensuring the torrent is available for download even if the original uploader goes offline.
-*   **Tracker:** The server can help peers find each other, though the use of public trackers means the network is not solely reliant on this server.
+*   **Tracker:** The server can help peers find each other, though the use of public trackers means the network is not solely reliant on this server. It does *not* store physical files or act as an initial seeder.
 
 ## 3. User Flow
 
 1.  **Contribute:** A user visits the "Contribute" page and selects a file to share. They provide a title and description for the file.
-2.  **Torrent Creation:** The browser creates a torrent from the file and generates a magnet URI. The user's browser begins to seed the file.
-3.  **Metadata Upload:** The magnet URI and the file's metadata are sent to the server and stored in the database. The server also starts seeding the file.
+2.  **Torrent Creation:** The browser creates a torrent from the selected file and generates a magnet URI. The user's browser begins to seed the file.
+3.  **Metadata Upload:** The magnet URI and the file's metadata are sent to the server and stored in the database. The server acts as a metadata store only.
 4.  **Library:** The new torrent appears in the "Library" page, where all users can see it.
 5.  **Download & Seeding:** When another user clicks on a torrent in the library, their browser starts downloading the file using the magnet URI. Once the download is complete (or even while it's in progress), their browser also begins to seed the file to other peers.

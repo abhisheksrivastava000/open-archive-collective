@@ -67,20 +67,23 @@ const Contribute = () => {
     client.seed(file, { announce: TRACKERS }, async (torrent) => {
       console.log('Client is seeding:', torrent.infoHash);
 
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('title', title);
-      formData.append('description', description);
-      formData.append('magnetURI', torrent.magnetURI);
-      formData.append('infoHash', torrent.infoHash);
-      formData.append('fileName', file.name);
-      formData.append('fileSize', String(file.size));
-      formData.append('category', 'other');
+      const metadata = {
+        title: title,
+        description: description,
+        magnetURI: torrent.magnetURI,
+        infoHash: torrent.infoHash,
+        fileName: file.name,
+        fileSize: file.size,
+        category: 'other',
+      };
 
       try {
         const response = await fetch(`${getApiUrl()}/api/torrents/upload`, {
           method: "POST",
-          body: formData,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(metadata),
         });
 
         if (!response.ok) {
