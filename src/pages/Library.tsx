@@ -33,33 +33,31 @@ const Library = () => {
 
     const socket = io(getApiUrl(), {
       reconnectionAttempts: 5,
-      // transports: ["websocket"], // Allow polling fallback to prevent transport close issues
+      transports: ["websocket"],
     });
 
     socket.on("connect", () => {
       console.log("Connected to socket server with ID:", socket.id);
     });
 
-    socket.on("torrent-updated", (updatedTorrent: { _id: string, seeders: number, leechers: number }) => {
-      setTorrents(prev => prev.map(t => 
-        t._id === updatedTorrent._id 
-          ? { ...t, seeders: updatedTorrent.seeders, leechers: updatedTorrent.leechers } 
-          : t
+    socket.on("torrent:update", (updatedTorrent: Torrent) => {
+      setTorrents(prev => prev.map(t =>
+        t._id === updatedTorrent._id ? updatedTorrent : t
       ));
     });
 
-    socket.on("torrent-deleted", (deletedId: string) => {
-      setTorrents(prev => prev.filter(t => t._id !== deletedId));
+    socket.on("torrent:new", (newTorrent: Torrent) => {
+      setTorrents(prev => [newTorrent, ...prev]);
       toast({
-        title: "Torrent Removed",
-        description: "A torrent was removed because it had no seeders.",
+        title: "New Contribution",
+        description: `"${newTorrent.title}" has been added to the library.`,
       });
     });
 
     return () => {
       socket.disconnect();
     };
-  }, []);
+  }, [toast]);
 
   const fetchTorrents = async () => {
     try {

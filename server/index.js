@@ -44,7 +44,7 @@ mongoose.connect(process.env.MONGODB_URI)
   .catch((err) => console.error('MongoDB connection error:', err));
 
 // Routes
-const torrentRoutes = require('./routes/torrentRoutes');
+const torrentRoutes = require('./routes/torrentRoutes')(io);
 app.use('/api/torrents', torrentRoutes);
 
 app.get('/', (req, res) => {

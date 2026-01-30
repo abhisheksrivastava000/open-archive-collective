@@ -24,9 +24,14 @@ const TorrentPlayer = ({ magnetURI, title }: TorrentPlayerProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (client) {
+      setStatus('loading');
+    }
+  }, [client]);
+
+  useEffect(() => {
     if (!client || !magnetURI || status !== 'loading') return;
 
-    // Check if torrent already exists
     const existingTorrent = client.get(magnetURI);
     if (existingTorrent) {
       setupTorrentListeners(existingTorrent);
@@ -59,25 +64,17 @@ const TorrentPlayer = ({ magnetURI, title }: TorrentPlayerProps) => {
       setStatus('ready');
     });
 
-    // Auto-select largest file for playback
     const largestFile = t.files.reduce((prev, current) => {
       return prev.length > current.length ? prev : current;
     });
     setActiveFile(largestFile);
   };
 
-  const handleStart = () => {
-    setStatus('loading');
-    setError(null);
-  };
-
   const renderContent = () => {
     if (!activeFile || !containerRef.current) return null;
 
-    // Clear previous content
     containerRef.current.innerHTML = '';
 
-    // Append file to container
     activeFile.appendTo(containerRef.current, {
       autoplay: true,
       controls: true,
@@ -102,15 +99,6 @@ const TorrentPlayer = ({ magnetURI, title }: TorrentPlayerProps) => {
 
   return (
     <div className="space-y-4 w-full">
-      {status === 'idle' && (
-        <div className="bg-black/90 aspect-video rounded-lg flex items-center justify-center">
-          <Button onClick={handleStart} size="lg" className="gap-2">
-            <Play className="w-5 h-5" />
-            Stream Content
-          </Button>
-        </div>
-      )}
-
       {status === 'loading' && (
         <div className="bg-black/90 aspect-video rounded-lg flex flex-col items-center justify-center text-white space-y-4">
           <Loader2 className="w-10 h-10 animate-spin text-accent" />
@@ -125,8 +113,8 @@ const TorrentPlayer = ({ magnetURI, title }: TorrentPlayerProps) => {
         </Alert>
       )}
 
-      <div 
-        ref={containerRef} 
+      <div
+        ref={containerRef}
         className={`aspect-video bg-black rounded-lg overflow-hidden ${status !== 'ready' ? 'hidden' : ''}`}
       />
 
