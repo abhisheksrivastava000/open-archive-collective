@@ -1,28 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const Torrent = require('../models/Torrent');
-// const multer = require('multer'); // No longer needed for file uploads
-// const path = require('path'); // No longer needed for file paths
-const { /* seedFile, DOWNLOAD_PATH */ } = require('../services/torrentSeeder'); // Destructure what's needed, if anything, after seeder changes
 
-module.exports = function(io) {
-  // Multer configuration for file upload is removed as server will not store physical files
-  // const storage = multer.diskStorage({
-  //   destination: (req, file, cb) => {
-  //     cb(null, DOWNLOAD_PATH);
-  //   },
-  //   filename: (req, file, cb) => {
-  //     cb(null, file.originalname);
-  //   }
-  // });
-  // const upload = multer({ storage: storage });
-
+module.exports = function (io) {
   // Upload Route (Metadata only - client creates torrent and provides magnetURI)
-  router.post('/upload', async (req, res) => { // Removed upload.single('file')
+  router.post('/upload', async (req, res) => {
     try {
+      console.log('Received upload request:', req.body);
       const { title, description, category, magnetURI, infoHash, fileName, fileSize } = req.body;
 
-      if (!magnetURI || !infoHash || !title || !fileName || !fileSize) { // fileName and fileSize are now required metadata
+      // Validate required fields (allow fileSize to be 0)
+      if (!magnetURI || !infoHash || !title || !fileName || fileSize === undefined || fileSize === null) {
+        console.error('Missing required fields:', { magnetURI, infoHash, title, fileName, fileSize });
         return res.status(400).json({ error: 'Missing required metadata fields' });
       }
 

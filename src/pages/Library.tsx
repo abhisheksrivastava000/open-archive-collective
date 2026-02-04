@@ -59,7 +59,7 @@ const Library = () => {
     const onTorrentReady = (t: WebTorrentTorrent) => {
       // Prioritize the largest file (likely the content)
       const file = t.files.reduce((a, b) => a.length > b.length ? a : b);
-      
+
       file.getBlob((err, blob) => {
         setDownloadingIds(prev => {
           const next = new Set(prev);
@@ -93,8 +93,10 @@ const Library = () => {
       });
     };
 
-    const existing = client.get(torrent.magnetURI);
-    if (existing) {
+    // Cast to any to handle potential type mismatch (Promise vs Sync) in different WebTorrent versions/types
+    const existing = client.get(torrent.magnetURI) as any;
+
+    if (existing && existing.infoHash) {
       onTorrentReady(existing);
     } else {
       client.add(torrent.magnetURI, onTorrentReady);
@@ -158,7 +160,7 @@ const Library = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
-  const filteredTorrents = torrents.filter(t => 
+  const filteredTorrents = torrents.filter(t =>
     t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     t.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -171,12 +173,12 @@ const Library = () => {
             Knowledge Library
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Free access to books, research, software, and educational resources. 
+            Free access to books, research, software, and educational resources.
             No paywalls. No restrictions. Just knowledge.
           </p>
         </div>
 
-        <QuoteBlock 
+        <QuoteBlock
           quote="If you have access to books, make copies and release them onto the internet."
           className="mb-16"
         />
@@ -217,7 +219,7 @@ const Library = () => {
                     </p>
                   </div>
                 </div>
-                
+
                 <div className="mt-auto pt-4 border-t border-border flex flex-col gap-3">
                   <div className="flex items-center justify-between text-xs text-muted-foreground font-mono">
                     <span>{formatSize(torrent.fileSize)}</span>
@@ -232,13 +234,14 @@ const Library = () => {
                       </span>
                     </div>
                   </div>
-                  
+
                   <div className="flex gap-2 justify-end">
-                    <Button 
-                      variant="default" 
-                      size="sm" 
+                    <Button
+                      variant="default"
+                      size="sm"
                       onClick={() => handleDownload(torrent)}
                       disabled={downloadingIds.has(torrent._id)}
+                      title="Download via WebTorrent"
                     >
                       {downloadingIds.has(torrent._id) ? (
                         <>
@@ -247,18 +250,12 @@ const Library = () => {
                         </>
                       ) : (
                         <>
-                          <Download className="w-4 h-4 mr-2" />
+                          <Magnet className="w-4 h-4 mr-2" />
                           Download
                         </>
                       )}
                     </Button>
-                    <Button variant="ghost" size="sm" asChild title="Download Magnet Link">
-                      <a href={torrent.magnetURI} target="_blank" rel="noopener noreferrer">
-                        <Magnet className="w-4 h-4 mr-2" />
-                        Magnet
-                      </a>
-                    </Button>
-                    
+
                     <Dialog>
                       <DialogTrigger asChild>
                         <Button variant="ghost" size="sm">

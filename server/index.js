@@ -4,9 +4,6 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
-// const { checkTorrents } = require('./services/torrentHealth'); // Removed
-// const { restoreTorrents } = require('./services/torrentSeeder'); // Removed
-// const Torrent = require('./models/Torrent'); // Removed as no longer used in index.js
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -25,19 +22,23 @@ const io = new Server(server, {
   pingInterval: 25000
 });
 
+const { MongoMemoryServer } = require('mongodb-memory-server');
+
 // Database Connection
-mongoose.connect(process.env.MONGODB_URI)
-  .then(async () => {
-    console.log('Connected to MongoDB');
-    
-    // Server no longer restores torrents or performs health checks
-    // restoreTorrents(Torrent); // Removed
-    // setInterval(() => { // Removed
-    //   checkTorrents(io); // Removed
-    // }, 60000); // Removed
-    // checkTorrents(io); // Removed
-  })
-  .catch((err) => console.error('MongoDB connection error:', err));
+const startServer = async () => {
+  try {
+    const mongod = await MongoMemoryServer.create();
+    const uri = mongod.getUri();
+    console.log('Starting in-memory MongoDB for Zero-Knowledge architecture at:', uri);
+
+    await mongoose.connect(uri);
+    console.log('Connected to In-Memory MongoDB');
+  } catch (err) {
+    console.error('MongoDB connection error:', err);
+  }
+};
+
+startServer();
 
 // Routes
 const torrentRoutes = require('./routes/torrentRoutes')(io);
