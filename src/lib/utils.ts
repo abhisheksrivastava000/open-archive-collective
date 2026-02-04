@@ -12,5 +12,9 @@ export const getApiUrl = () => {
 export const TRACKERS = [
   "wss://tracker.openwebtorrent.com",
   "wss://tracker.btorrent.xyz",
-  "wss://tracker.webtorrent.io"
+  "wss://tracker.webtorrent.io",
+  "wss://tracker.files.fm:7073/announce",
+  "wss://wpe.project.ltd",
+  "wss://peertube.cpy.re/tracker/socket",
+  "wss://tracker.webtorrent.dev"
 ];

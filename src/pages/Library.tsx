@@ -90,11 +90,21 @@ const Library = () => {
         return;
       }
 
-      // Prioritize the largest file (likely the content)
-      const file = t.files.reduce((a, b) => a.length > b.length ? a : b);
       console.log(`[File Selected] ${file.name} (${file.length} bytes)`);
 
+      // Peer Check Timeout
+      const peerTimeout = setTimeout(() => {
+        if (t.numPeers === 0 && t.progress === 0) {
+          toast({
+            title: "Searching for Peers...",
+            description: "No peers found yet. Ensure the uploader tab is still open and connected.",
+            duration: 10000,
+          });
+        }
+      }, 15000);
+
       file.getBlob((err, blob) => {
+        clearTimeout(peerTimeout);
         setDownloadingIds(prev => {
           const next = new Set(prev);
           next.delete(torrent._id);
@@ -112,19 +122,35 @@ const Library = () => {
         }
 
         console.log(`[Blob Ready] Size: ${blob.size}`);
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = torrent.fileName || file.name;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
 
-        toast({
-          title: "Download Complete",
-          description: `"${torrent.fileName}" has been saved to your device.`,
-        });
+        // Force file download
+        try {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.style.display = 'none';
+          a.href = url;
+          a.download = torrent.fileName || file.name;
+          document.body.appendChild(a);
+          a.click();
+
+          // Cleanup
+          setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          }, 100);
+
+          toast({
+            title: "Download Complete",
+            description: `"${torrent.fileName}" has been saved to your device.`,
+          });
+        } catch (e) {
+          console.error("File save error:", e);
+          toast({
+            title: "Save Error",
+            description: "File downloaded but failed to save due to browser restrictions.",
+            variant: "destructive"
+          });
+        }
       });
     };
 

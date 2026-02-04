@@ -13,7 +13,16 @@ export const useWebTorrent = () => {
         // Dynamically import WebTorrent to avoid SSR issues if any, 
         // though this is a SPA. It also helps with code splitting.
         const { default: WebTorrent } = await import('webtorrent');
-        client = new WebTorrent();
+        client = new WebTorrent({
+          tracker: {
+            rtcConfig: {
+              iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:global.stun.twilio.com:3478' }
+              ]
+            }
+          }
+        });
       }
       setTorrentClient(client);
     };
