@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import QuoteBlock from "@/components/QuoteBlock";
 import { useToast } from "@/hooks/use-toast";
 import TorrentPlayer from "@/components/TorrentPlayer";
-import { getApiUrl } from "@/lib/utils";
+import { getApiUrl, TRACKERS } from "@/lib/utils";
 import { useWebTorrent } from "@/hooks/useWebTorrent";
 import type { Torrent as WebTorrentTorrent } from 'webtorrent';
 
@@ -57,8 +57,42 @@ const Library = () => {
     });
 
     const onTorrentReady = (t: WebTorrentTorrent) => {
+      console.log(`[Torrent Ready] InfoHash: ${t.infoHash} Name: ${t.name}`);
+      console.log(`[Torrent Peer Info] Peers: ${t.numPeers}`);
+
+      t.on('download', (bytes) => {
+        console.log(`[Download] ${bytes} bytes derived. Progress: ${(t.progress * 100).toFixed(1)}% | Peers: ${t.numPeers}`);
+      });
+
+      t.on('done', () => {
+        console.log('[Torrent Done] Download complete');
+      });
+
+      t.on('wire', (wire, addr) => {
+        console.log(`[Wire] Connected to peer: ${addr}`);
+      });
+
+      t.on('error', (err) => {
+        console.error('[Torrent Error]:', err);
+        toast({
+          title: "Torrent Error",
+          description: typeof err === 'string' ? err : err.message,
+          variant: "destructive"
+        });
+      });
+
+      t.on('noPeers', (announceType) => {
+        console.warn(`[No Peers] Announce type: ${announceType}`);
+      });
+
+      if (t.files.length === 0) {
+        console.error("[Torrent Error] No files found in torrent metadata");
+        return;
+      }
+
       // Prioritize the largest file (likely the content)
       const file = t.files.reduce((a, b) => a.length > b.length ? a : b);
+      console.log(`[File Selected] ${file.name} (${file.length} bytes)`);
 
       file.getBlob((err, blob) => {
         setDownloadingIds(prev => {
@@ -77,6 +111,7 @@ const Library = () => {
           return;
         }
 
+        console.log(`[Blob Ready] Size: ${blob.size}`);
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -93,13 +128,17 @@ const Library = () => {
       });
     };
 
+    console.log(`[Start Download] Adding magnet: ${torrent.magnetURI}`);
     // Cast to any to handle potential type mismatch (Promise vs Sync) in different WebTorrent versions/types
     const existing = client.get(torrent.magnetURI) as any;
 
     if (existing && existing.infoHash) {
+      console.log('[Client] Torrent already exists in client');
       onTorrentReady(existing);
     } else {
-      client.add(torrent.magnetURI, onTorrentReady);
+      console.log('[Client] Adding new torrent to client with trackers:', TRACKERS);
+      // Force announce list to ensure connectivity
+      client.add(torrent.magnetURI, { announce: TRACKERS }, onTorrentReady);
     }
   };
 
