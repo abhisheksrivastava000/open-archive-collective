@@ -118,12 +118,12 @@ const Contribute = () => {
             Contribute Knowledge
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Help us liberate information. Share books, research, software, and educational resources 
+            Help us liberate information. Share books, research, software, and educational resources
             with the world.
           </p>
         </div>
 
-        <QuoteBlock 
+        <QuoteBlock
           quote="If you believe knowledge belongs to humanity, then become the pirate who fights for freedom."
           className="mb-16"
         />
@@ -149,10 +149,10 @@ const Contribute = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="title">Title</Label>
-                <Input 
-                  id="title" 
-                  value={title} 
-                  onChange={(e) => setTitle(e.target.value)} 
+                <Input
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
                   placeholder="Enter a descriptive title"
                   required
                 />
@@ -160,10 +160,10 @@ const Contribute = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
-                <Textarea 
-                  id="description" 
-                  value={description} 
-                  onChange={(e) => setDescription(e.target.value)} 
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
                   placeholder="Describe the content..."
                   rows={4}
                 />
@@ -193,7 +193,7 @@ const Contribute = () => {
               <p className="text-xl text-muted-foreground">
                 Your file is now part of the decentralized network.
               </p>
-              
+
               <div className="bg-muted p-4 rounded-lg text-left break-all font-mono text-sm">
                 <p className="font-bold mb-2 text-xs uppercase tracking-wider text-muted-foreground">Magnet Link:</p>
                 {magnetLink}
@@ -224,8 +224,8 @@ const Contribute = () => {
               Your Active Seeds ({activeSeeds.length})
             </h2>
             <div className="grid gap-4">
-              {activeSeeds.map((torrent) => (
-                <Card key={torrent.infoHash} className="p-6">
+              {activeSeeds.map((torrent, index) => (
+                <Card key={torrent.infoHash || index} className="p-6">
                   <div className="flex justify-between items-center">
                     <div>
                       <h3 className="font-bold text-lg">{torrent.name}</h3>
@@ -296,19 +296,19 @@ const Contribute = () => {
           <h2 className="text-2xl font-display font-bold mb-6">Contribution Guidelines</h2>
           <div className="space-y-4 text-muted-foreground">
             <p>
-              <strong className="text-foreground">Be a liberation warrior:</strong> Share knowledge 
+              <strong className="text-foreground">Be a liberation warrior:</strong> Share knowledge
               that has been locked away behind paywalls, proprietary licenses, or institutional barriers.
             </p>
             <p>
-              <strong className="text-foreground">Educational value:</strong> Focus on content that 
+              <strong className="text-foreground">Educational value:</strong> Focus on content that
               can educate, inform, or help people learn and grow.
             </p>
             <p>
-              <strong className="text-foreground">No size limits:</strong> Share large datasets, 
+              <strong className="text-foreground">No size limits:</strong> Share large datasets,
               complete book collections, software packages - we don't limit knowledge by file size.
             </p>
             <p>
-              <strong className="text-foreground">Anonymous contribution:</strong> You can contribute 
+              <strong className="text-foreground">Anonymous contribution:</strong> You can contribute
               anonymously if you prefer. We understand the risks freedom fighters take.
             </p>
           </div>

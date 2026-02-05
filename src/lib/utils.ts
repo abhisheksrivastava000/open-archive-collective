@@ -11,11 +11,12 @@ export const getApiUrl = () => {
 
 export const TRACKERS = [
   `ws://${window.location.hostname}:3001/tracker`,
-  "wss://tracker.openwebtorrent.com",
-  "wss://tracker.btorrent.xyz",
-  "wss://tracker.webtorrent.io",
-  "wss://tracker.files.fm:7073/announce",
-  "wss://wpe.project.ltd",
-  "wss://peertube.cpy.re/tracker/socket",
-  "wss://tracker.webtorrent.dev"
+  // Public trackers (commented out to reduce console noise during local dev)
+  // "wss://tracker.openwebtorrent.com",
+  // "wss://tracker.btorrent.xyz",
+  // "wss://tracker.webtorrent.io",
+  // "wss://tracker.files.fm:7073/announce",
+  // "wss://wpe.project.ltd",
+  // "wss://peertube.cpy.re/tracker/socket",
+  // "wss://tracker.webtorrent.dev"
 ];
