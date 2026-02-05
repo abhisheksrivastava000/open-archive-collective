@@ -90,6 +90,8 @@ const Library = () => {
         return;
       }
 
+      const file = t.files[0];
+
       console.log(`[File Selected] ${file.name} (${file.length} bytes)`);
 
       // Peer Check Timeout
