@@ -45,9 +45,9 @@ const startServer = async () => {
 
     const tracker = new TrackerServer({
       udp: false,
-      http: true,
-      ws: true,
-      stats: true,
+      http: false,
+      ws: { noServer: true },
+      stats: false,
     });
 
     tracker.on('error', (err) => {
@@ -59,7 +59,7 @@ const startServer = async () => {
     });
 
     tracker.on('listening', () => {
-      console.log('[Tracker] Listening for peers');
+      console.log('[Tracker] Listening (internal)');
     });
 
     tracker.on('start', (addr) => {
@@ -69,22 +69,35 @@ const startServer = async () => {
     // 3. Attach Tracker to HTTP Server
     server.on('request', (req, res) => {
       if (req.url.startsWith('/announce') || req.url.startsWith('/scrape')) {
+        console.log('[Tracker] HTTP Request:', req.url);
         tracker.onHttpRequest(req, res);
       }
     });
 
     server.on('upgrade', (req, socket, head) => {
       const pathname = new URL(req.url, `http://${req.headers.host}`).pathname;
+      console.log('[Server] Upgrade request:', pathname);
+
       if (pathname.startsWith('/socket.io')) return;
 
-      if (pathname === '/' || pathname === '/announce') {
-        tracker.onWebSocketConnection(socket);
+      if (pathname === '/tracker' || pathname === '/announce') {
+        console.log('[Tracker] Handling WebSocket upgrade for path:', pathname);
+
+        // Critical Fix: Use handleUpgrade to properly handshake generic WebSocket request
+        // before passing to tracker wrapper
+        tracker.ws.handleUpgrade(req, socket, head, (ws) => {
+          tracker.onWebSocketConnection(ws);
+        });
+      } else {
+        console.log('[Server] Unhandled upgrade:', pathname);
+        socket.destroy();
       }
     });
 
     // 4. Start HTTP Server
     server.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
+      console.log(`Tracker is enabled on ws://localhost:${PORT}/tracker`);
     });
 
   } catch (err) {

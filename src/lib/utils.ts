@@ -10,7 +10,7 @@ export const getApiUrl = () => {
 };
 
 export const TRACKERS = [
-  `ws://${window.location.hostname}:3001`,
+  `ws://${window.location.hostname}:3001/tracker`,
   "wss://tracker.openwebtorrent.com",
   "wss://tracker.btorrent.xyz",
   "wss://tracker.webtorrent.io",
