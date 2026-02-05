@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => ({
     nodePolyfills({
       // To exclude specific polyfills, add them to this list.
       exclude: [
-        'fs', // Exclude fs polyfill.
+        // 'fs', // Re-enabling fs polyfill to prevent bundler warnings with webtorrent
       ],
       // Whether to polyfill specific globals.
       globals: {
