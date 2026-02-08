@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { io } from "socket.io-client";
+import { io, Socket } from "socket.io-client";
 import { FileText, Download, Search, Loader2, Magnet, Play, ArrowUp, ArrowDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -8,9 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import QuoteBlock from "@/components/QuoteBlock";
 import { useToast } from "@/hooks/use-toast";
 import TorrentPlayer from "@/components/TorrentPlayer";
-import { getApiUrl, TRACKERS } from "@/lib/utils";
-import { useWebTorrent } from "@/hooks/useWebTorrent";
-import type { Torrent as WebTorrentTorrent } from 'webtorrent';
+import { getApiUrl } from "@/lib/utils";
+import { useP2P } from "@/hooks/useP2P";
 
 interface Torrent {
   _id: string;
@@ -29,166 +28,80 @@ const Library = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
-  const client = useWebTorrent();
-  const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
+  const [socket, setSocket] = useState<Socket | null>(null);
+  
+  // P2P Hook
+  const { download, progress, status, error, cleanup } = useP2P(socket);
+  const [activeDownloadId, setActiveDownloadId] = useState<string | null>(null);
 
   const handleDownload = (torrent: Torrent) => {
-    if (!client) {
+    if (!socket) {
       toast({
-        title: "Client not ready",
-        description: "Please wait for WebTorrent to initialize.",
+        title: "Connection Error",
+        description: "Not connected to signaling server.",
         variant: "destructive",
       });
       return;
     }
 
-    if (downloadingIds.has(torrent._id)) {
+    if (activeDownloadId) {
       toast({
-        title: "Already downloading",
-        description: `"${torrent.title}" is already being downloaded.`,
+        title: "Download in progress",
+        description: "Please wait for current download to finish.",
+        variant: "destructive",
       });
       return;
     }
 
-    setDownloadingIds(prev => new Set(prev).add(torrent._id));
+    setActiveDownloadId(torrent._id);
+    download(torrent._id);
+
     toast({
-      title: "Download Started",
-      description: `Starting download for "${torrent.title}". Please keep this tab open.`,
+      title: "Looking for peers...",
+      description: `Searching for seeders for "${torrent.title}".`,
     });
-
-    const onTorrentReady = (t: WebTorrentTorrent) => {
-      console.log(`[Torrent Ready] InfoHash: ${t.infoHash} Name: ${t.name}`);
-      console.log(`[Torrent Peer Info] Peers: ${t.numPeers}`);
-
-      t.on('download', (bytes) => {
-        console.log(`[Download] ${bytes} bytes derived. Progress: ${(t.progress * 100).toFixed(1)}% | Peers: ${t.numPeers}`);
-      });
-
-      t.on('done', () => {
-        console.log('[Torrent Done] Download complete');
-      });
-
-      t.on('wire', (wire, addr) => {
-        console.log(`[Wire] Connected to peer: ${addr}`);
-      });
-
-      t.on('error', (err) => {
-        console.error('[Torrent Error]:', err);
-        toast({
-          title: "Torrent Error",
-          description: typeof err === 'string' ? err : err.message,
-          variant: "destructive"
-        });
-      });
-
-      t.on('noPeers', (announceType) => {
-        console.warn(`[No Peers] Announce type: ${announceType}`);
-      });
-
-      if (t.files.length === 0) {
-        console.error("[Torrent Error] No files found in torrent metadata");
-        return;
-      }
-
-      const file = t.files[0];
-
-      console.log(`[File Selected] ${file.name} (${file.length} bytes)`);
-
-      // Peer Check Timeout
-      const peerTimeout = setTimeout(() => {
-        if (t.numPeers === 0 && t.progress === 0) {
-          toast({
-            title: "Searching for Peers...",
-            description: "No peers found yet. Ensure the uploader tab is still open and connected.",
-            duration: 10000,
-          });
-        }
-      }, 15000);
-
-      file.getBlob((err, blob) => {
-        clearTimeout(peerTimeout);
-        setDownloadingIds(prev => {
-          const next = new Set(prev);
-          next.delete(torrent._id);
-          return next;
-        });
-
-        if (err || !blob) {
-          console.error("Download error:", err);
-          toast({
-            title: "Download Failed",
-            description: `Could not retrieve file for "${torrent.title}".`,
-            variant: "destructive",
-          });
-          return;
-        }
-
-        console.log(`[Blob Ready] Size: ${blob.size}`);
-
-        // Force file download
-        try {
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.style.display = 'none';
-          a.href = url;
-          a.download = torrent.fileName || file.name;
-          document.body.appendChild(a);
-          a.click();
-
-          // Cleanup
-          setTimeout(() => {
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-          }, 100);
-
-          toast({
-            title: "Download Complete",
-            description: `"${torrent.fileName}" has been saved to your device.`,
-          });
-        } catch (e) {
-          console.error("File save error:", e);
-          toast({
-            title: "Save Error",
-            description: "File downloaded but failed to save due to browser restrictions.",
-            variant: "destructive"
-          });
-        }
-      });
-    };
-
-    console.log(`[Start Download] Adding magnet: ${torrent.magnetURI}`);
-    // Cast to any to handle potential type mismatch (Promise vs Sync) in different WebTorrent versions/types
-    const existing = client.get(torrent.magnetURI) as any;
-
-    if (existing && existing.infoHash) {
-      console.log('[Client] Torrent already exists in client');
-      onTorrentReady(existing);
-    } else {
-      console.log('[Client] Adding new torrent to client with trackers:', TRACKERS);
-      // Force announce list to ensure connectivity
-      client.add(torrent.magnetURI, { announce: TRACKERS }, onTorrentReady);
-    }
   };
+
+  // Monitor P2P Status
+  useEffect(() => {
+    if (status === 'completed') {
+        toast({
+            title: "Download Complete",
+            description: "File saved to device.",
+        });
+        setActiveDownloadId(null);
+        cleanup();
+    } else if (status === 'error') {
+        toast({
+            title: "Download Status",
+            description: error || "Unknown error occurred",
+            variant: "destructive"
+        });
+        setActiveDownloadId(null);
+    }
+  }, [status, error, cleanup, toast]);
 
   useEffect(() => {
     fetchTorrents();
 
-    const socket = io(getApiUrl(), {
+    const newSocket = io(getApiUrl(), {
       reconnectionAttempts: 5,
       transports: ["websocket"],
     });
 
-    socket.on("connect", () => {
-      console.log("Connected to socket server with ID:", socket.id);
+    setSocket(newSocket);
+
+    newSocket.on("connect", () => {
+      console.log("Connected to socket server with ID:", newSocket.id);
     });
 
-    socket.on("torrent:update", (updatedTorrent: Torrent) => {
+    newSocket.on("torrent:update", (updatedTorrent: Torrent) => {
       setTorrents(prev => prev.map(t =>
         t._id === updatedTorrent._id ? updatedTorrent : t
       ));
     });
 
-    socket.on("torrent:new", (newTorrent: Torrent) => {
+    newSocket.on("torrent:new", (newTorrent: Torrent) => {
       setTorrents(prev => [newTorrent, ...prev]);
       toast({
         title: "New Contribution",
@@ -197,7 +110,7 @@ const Library = () => {
     });
 
     return () => {
-      socket.disconnect();
+      newSocket.disconnect();
     };
   }, [toast]);
 
@@ -307,22 +220,23 @@ const Library = () => {
                       variant="default"
                       size="sm"
                       onClick={() => handleDownload(torrent)}
-                      disabled={downloadingIds.has(torrent._id)}
-                      title="Download via WebTorrent"
+                      disabled={!!activeDownloadId}
+                      title="Download via p2p"
                     >
-                      {downloadingIds.has(torrent._id) ? (
+                      {activeDownloadId === torrent._id ? (
                         <>
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Downloading...
+                          {status === 'connecting' ? 'Connecting...' : `${Math.round(progress)}%`}
                         </>
                       ) : (
                         <>
-                          <Magnet className="w-4 h-4 mr-2" />
+                          <Download className="w-4 h-4 mr-2" />
                           Download
                         </>
                       )}
                     </Button>
 
+                    {/* Streaming temporarily disabled in pure P2P mode
                     <Dialog>
                       <DialogTrigger asChild>
                         <Button variant="ghost" size="sm">
@@ -339,6 +253,7 @@ const Library = () => {
                         </div>
                       </DialogContent>
                     </Dialog>
+                    */}
                   </div>
                 </div>
               </Card>

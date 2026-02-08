@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { io, Socket } from "socket.io-client";
 import { Upload, FileText, HardDrive, Loader2, CheckCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,29 +8,32 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import QuoteBlock from "@/components/QuoteBlock";
-import { useWebTorrent } from "@/hooks/useWebTorrent";
-import { getApiUrl, TRACKERS } from "@/lib/utils";
+import { useP2P } from "@/hooks/useP2P";
+import { getApiUrl } from "@/lib/utils";
 
 const Contribute = () => {
   const { toast } = useToast();
-  const client = useWebTorrent();
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const { seed, status: p2pStatus } = useP2P(socket); // We only care about seed capability here
+  
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
-  const [magnetLink, setMagnetLink] = useState("");
-  const [activeSeeds, setActiveSeeds] = useState<any[]>([]);
-
-  // Update active seeds list
+  
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (client) {
-        setActiveSeeds(client.torrents);
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [client]);
+    const newSocket = io(getApiUrl(), {
+      reconnectionAttempts: 5,
+      transports: ["websocket"],
+    });
+
+    setSocket(newSocket);
+
+    return () => {
+      newSocket.disconnect();
+    };
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -52,10 +56,10 @@ const Contribute = () => {
       return;
     }
 
-    if (!client) {
+    if (!socket) {
       toast({
-        title: "Client not ready",
-        description: "WebTorrent client is initializing. Please try again in a moment.",
+        title: "Connection Error",
+        description: "Not connected to signaling server.",
         variant: "destructive",
       });
       return;
@@ -63,21 +67,16 @@ const Contribute = () => {
 
     setIsUploading(true);
 
-    // Seed the file client-side
-    client.seed(file, { announce: TRACKERS }, async (torrent) => {
-      console.log('Client is seeding:', torrent.infoHash);
+    try {
+        // 1. Create entry on server
+        const metadata = {
+            title: title,
+            description: description,
+            fileName: file.name,
+            fileSize: file.size,
+            category: 'other',
+        };
 
-      const metadata = {
-        title: title,
-        description: description,
-        magnetURI: torrent.magnetURI,
-        infoHash: torrent.infoHash,
-        fileName: file.name,
-        fileSize: file.size,
-        category: 'other',
-      };
-
-      try {
         const response = await fetch(`${getApiUrl()}/api/torrents/upload`, {
           method: "POST",
           headers: {
@@ -91,23 +90,27 @@ const Contribute = () => {
         }
 
         const data = await response.json();
+        const fileId = data.torrent._id;
+
+        // 2. Start Seeding
+        seed(file, fileId);
+
         setUploadSuccess(true);
-        setMagnetLink(data.torrent.magnetURI);
         toast({
-          title: "Upload Successful",
-          description: "You are now seeding this file. Please keep this tab open to share it!",
+          title: "Seeding Started",
+          description: "You are now sharing this file. Keep this tab open!",
         });
-      } catch (error) {
+        
+    } catch (error) {
         console.error("Upload error:", error);
         toast({
           title: "Upload Failed",
-          description: "There was an error uploading your file metadata. Please try again.",
+          description: "There was an error creating the library entry.",
           variant: "destructive",
         });
-      } finally {
+    } finally {
         setIsUploading(false);
-      }
-    });
+    }
   };
 
   return (
@@ -176,7 +179,7 @@ const Contribute = () => {
                     Processing & Seeding...
                   </>
                 ) : (
-                  "Upload & Create Torrent"
+                  "Upload & Share P2P"
                 )}
               </Button>
             </form>
@@ -194,18 +197,12 @@ const Contribute = () => {
                 Your file is now part of the decentralized network.
               </p>
 
-              <div className="bg-muted p-4 rounded-lg text-left break-all font-mono text-sm">
-                <p className="font-bold mb-2 text-xs uppercase tracking-wider text-muted-foreground">Magnet Link:</p>
-                {magnetLink}
-              </div>
-
               <div className="flex gap-4 justify-center">
                 <Button onClick={() => {
                   setUploadSuccess(false);
                   setFile(null);
                   setTitle("");
                   setDescription("");
-                  setMagnetLink("");
                 }} variant="outline">
                   Upload Another
                 </Button>
@@ -217,32 +214,28 @@ const Contribute = () => {
           )}
         </Card>
 
-        {/* Active Seeds Section */}
-        {activeSeeds.length > 0 && (
+        {/* Active Seeding Status (Single Active Seed) */}
+        {p2pStatus !== 'idle' && (
           <div className="mb-16">
             <h2 className="text-3xl font-display font-bold mb-8 text-center">
-              Your Active Seeds ({activeSeeds.length})
+              Active Seeding
             </h2>
-            <div className="grid gap-4">
-              {activeSeeds.map((torrent, index) => (
-                <Card key={torrent.infoHash || index} className="p-6">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="font-bold text-lg">{torrent.name}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Peers: {torrent.numPeers} (connected) | Upload Speed: {(torrent.uploadSpeed / 1024 / 1024).toFixed(2)} MB/s
-                      </p>
-                    </div>
-                    <div className="text-green-600 flex items-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Seeding
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
+             <Card className="p-6">
+                <div className="flex justify-between items-center">
+                <div>
+                    <h3 className="font-bold text-lg">{file?.name || "Shared File"}</h3>
+                    <p className="text-sm text-muted-foreground">
+                    Status: Ready to share via WebRTC
+                    </p>
+                </div>
+                <div className="text-green-600 flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Seeding
+                </div>
+                </div>
+            </Card>
             <p className="text-center text-sm text-muted-foreground mt-4">
-              "0 Peers" is normal if no one is currently downloading. You are ready to upload!
+              Keep this tab open for others to download.
             </p>
           </div>
         )}

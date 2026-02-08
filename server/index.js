@@ -35,69 +35,33 @@ const startServer = async () => {
     await mongoose.connect(uri);
     console.log('Connected to In-Memory MongoDB');
 
-    // 2. Initialize Tracker (Dynamic Import for ESM support)
-    // Import specifically from /server to avoid client-side dependencies and ensure correct export usage
-    const { default: TrackerServer } = await import('bittorrent-tracker/server');
+    // 2. WebRTC Signaling via Socket.IO
+    io.on('connection', (socket) => {
+      console.log('User connected:', socket.id);
 
-    if (!TrackerServer) {
-      throw new Error('Could not find Server in bittorrent-tracker/server exports');
-    }
+      socket.on('join-room', (roomId) => {
+        socket.join(roomId);
+        console.log(`User ${socket.id} joined room ${roomId}`);
+        // Notify others in room that a new peer joined
+        socket.to(roomId).emit('peer-joined', { peerId: socket.id });
+      });
 
-    const tracker = new TrackerServer({
-      udp: false,
-      http: false,
-      ws: { noServer: true },
-      stats: false,
-    });
-
-    tracker.on('error', (err) => {
-      console.error('[Tracker] Error:', err.message);
-    });
-
-    tracker.on('warning', (err) => {
-      console.warn('[Tracker] Warning:', err.message);
-    });
-
-    tracker.on('listening', () => {
-      console.log('[Tracker] Listening (internal)');
-    });
-
-    tracker.on('start', (addr) => {
-      console.log('[Tracker] Peer connected:', addr);
-    });
-
-    // 3. Attach Tracker to HTTP Server
-    server.on('request', (req, res) => {
-      if (req.url.startsWith('/announce') || req.url.startsWith('/scrape')) {
-        console.log('[Tracker] HTTP Request:', req.url);
-        tracker.onHttpRequest(req, res);
-      }
-    });
-
-    server.on('upgrade', (req, socket, head) => {
-      const pathname = new URL(req.url, `http://${req.headers.host}`).pathname;
-      console.log('[Server] Upgrade request:', pathname);
-
-      if (pathname.startsWith('/socket.io')) return;
-
-      if (pathname === '/tracker' || pathname === '/announce') {
-        console.log('[Tracker] Handling WebSocket upgrade for path:', pathname);
-
-        // Critical Fix: Use handleUpgrade to properly handshake generic WebSocket request
-        // before passing to tracker wrapper
-        tracker.ws.handleUpgrade(req, socket, head, (ws) => {
-          tracker.onWebSocketConnection(ws);
+      socket.on('signal', (data) => {
+        // data: { target: peerId, signal: signalData }
+        io.to(data.target).emit('signal', {
+          sender: socket.id,
+          signal: data.signal
         });
-      } else {
-        console.log('[Server] Unhandled upgrade:', pathname);
-        socket.destroy();
-      }
-    });
+      });
 
+      socket.on('disconnect', () => {
+        console.log('User disconnected:', socket.id);
+      });
+    });
     // 4. Start HTTP Server
     server.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
-      console.log(`Tracker is enabled on ws://localhost:${PORT}/tracker`);
+      console.log(`Socket.IO signaling ready`);
     });
 
   } catch (err) {

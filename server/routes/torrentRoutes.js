@@ -10,20 +10,24 @@ module.exports = function (io) {
       const { title, description, category, magnetURI, infoHash, fileName, fileSize } = req.body;
 
       // Validate required fields (allow fileSize to be 0)
-      if (!magnetURI || !infoHash || !title || !fileName || fileSize === undefined || fileSize === null) {
-        console.error('Missing required fields:', { magnetURI, infoHash, title, fileName, fileSize });
+      if (!title || !fileName || fileSize === undefined || fileSize === null) {
+        console.error('Missing required fields:', { title, fileName, fileSize });
         return res.status(400).json({ error: 'Missing required metadata fields' });
       }
 
+      // Generate ID if no infoHash provided (P2P mode)
+      const effectiveInfoHash = infoHash || require('crypto').randomBytes(20).toString('hex');
+      const effectiveMagnetURI = magnetURI || `magnet:?xt=urn:btih:${effectiveInfoHash}`;
+
       // Check if torrent already exists
-      let torrent = await Torrent.findOne({ infoHash });
+      let torrent = await Torrent.findOne({ infoHash: effectiveInfoHash });
 
       if (torrent) {
         // Update existing torrent metadata (if necessary, though for zero-knowledge, re-uploading metadata might imply a new intent)
         torrent.title = title;
         torrent.description = description;
         torrent.category = category || 'other';
-        torrent.magnetURI = magnetURI;
+        torrent.magnetURI = effectiveMagnetURI;
         torrent.fileName = fileName; // Update if changed
         torrent.fileSize = fileSize; // Update if changed
         torrent.uploadedBy = 'anonymous'; // Keep anonymous for now
@@ -43,8 +47,8 @@ module.exports = function (io) {
         title,
         description,
         category: category || 'other',
-        magnetURI,
-        infoHash,
+        magnetURI: effectiveMagnetURI,
+        infoHash: effectiveInfoHash,
         fileName: fileName,
         fileSize: fileSize,
         seeders: 0, // Server is not a seeder
