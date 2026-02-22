@@ -10,10 +10,10 @@ export const useWebTorrent = () => {
   useEffect(() => {
     const initClient = async () => {
       if (!client) {
-        // Dynamically import WebTorrent to avoid SSR issues if any, 
-        // though this is a SPA. It also helps with code splitting.
-        const { default: WebTorrent } = await import('webtorrent');
-        client = new WebTorrent({
+        // Dynamically import WebTorrent dist to avoid SSR/Vite issues
+        const WebTorrentModule = await import('webtorrent/dist/webtorrent.min.js');
+        const WT = WebTorrentModule.default || (WebTorrentModule as any);
+        client = new WT({
           tracker: {
             rtcConfig: {
               iceServers: [
