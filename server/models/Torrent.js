@@ -8,14 +8,10 @@ const torrentSchema = new mongoose.Schema({
   description: {
     type: String,
   },
-  infoHash: {
+  cid: {
     type: String,
     required: true,
     unique: true,
-  },
-  magnetURI: {
-    type: String,
-    required: true,
   },
   fileName: {
     type: String,

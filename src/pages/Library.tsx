@@ -9,8 +9,7 @@ import QuoteBlock from "@/components/QuoteBlock";
 import { useToast } from "@/hooks/use-toast";
 import TorrentPlayer from "@/components/TorrentPlayer";
 import { getApiUrl } from "@/lib/utils";
-import { useWebTorrent } from "@/hooks/useWebTorrent";
-import type { Torrent as WebTorrentType } from 'webtorrent';
+import { useIPFS } from "@/hooks/useIPFS";
 
 interface Torrent {
   _id: string;
@@ -18,7 +17,7 @@ interface Torrent {
   description: string;
   fileName: string;
   fileSize: number;
-  magnetURI: string;
+  cid: string;
   createdAt: string;
   seeders: number;
   leechers: number;
@@ -31,8 +30,7 @@ const Library = () => {
   const { toast } = useToast();
   const [socket, setSocket] = useState<Socket | null>(null);
 
-  // WebTorrent Client Hook
-  const client = useWebTorrent();
+  const { helia, fs } = useIPFS();
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [downloadStatus, setDownloadStatus] = useState<'idle' | 'connecting' | 'downloading' | 'saving'>('idle');
   const [activeDownloadId, setActiveDownloadId] = useState<string | null>(null);
@@ -43,7 +41,7 @@ const Library = () => {
     setDownloadStatus('idle');
   };
 
-  const handleDownload = (torrentData: Torrent) => {
+  const handleDownload = async (torrentData: Torrent) => {
     if (!socket) {
       toast({
         title: "Connection Error",
@@ -53,10 +51,10 @@ const Library = () => {
       return;
     }
 
-    if (!client) {
+    if (!helia || !fs) {
       toast({
         title: "Client Error",
-        description: "WebTorrent client not ready",
+        description: "IPFS client not ready",
         variant: "destructive",
       });
       return;
@@ -72,92 +70,76 @@ const Library = () => {
     }
 
     setActiveDownloadId(torrentData._id);
-    setDownloadStatus('connecting');
 
     toast({
-      title: "Looking for peers...",
-      description: `Searching for seeders for "${torrentData.title}".`,
+      title: "Locating content...",
+      description: `Searching IPFS for "${torrentData.title}".`,
     });
 
-    client.add(torrentData.magnetURI, async (torrent) => {
+    try {
       setDownloadStatus('downloading');
 
-      torrent.on('download', () => {
-        setDownloadProgress(torrent.progress * 100);
-      });
-
-      // Use File System Access API when done
-      torrent.on('done', async () => {
+      // Feature detect File System API
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let writableStream: any = null;
+      if ('showSaveFilePicker' in window) {
         setDownloadStatus('saving');
-        // Support older torrents that might not have fileName in the DB properly mapped, fallback to torrent.files[0]
-        const file = torrent.files.find(f => f.name === torrentData.fileName) || torrent.files[0];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const handle = await (window as any).showSaveFilePicker({
+          suggestedName: torrentData.fileName,
+        });
+        writableStream = await handle.createWritable();
+      }
 
-        if (!file) {
-          toast({
-            title: "Error",
-            description: "File not found in torrent",
-            variant: "destructive"
-          });
-          cleanupDownload();
-          return;
+      const chunks: Uint8Array[] = [];
+      let downloadedBytes = 0;
+
+      // Import CID multiformat
+      const { CID } = await import('multiformats/cid');
+      const cidObj = CID.parse(torrentData.cid);
+
+      for await (const chunk of fs.cat(cidObj)) {
+        if (writableStream) {
+          await writableStream.write(chunk);
+        } else {
+          chunks.push(chunk);
         }
 
-        try {
-          // Feature detect File System API
-          if ('showSaveFilePicker' in window) {
-            const handle = await (window as any).showSaveFilePicker({
-              suggestedName: file.name,
-            });
-            const writable = await handle.createWritable();
-
-            const nodeStream = file.createReadStream();
-            const stream = new ReadableStream({
-              start(controller) {
-                nodeStream.on('data', (chunk: Uint8Array) => controller.enqueue(chunk));
-                nodeStream.on('end', () => controller.close());
-                nodeStream.on('error', (err: any) => controller.error(err));
-              },
-              cancel() {
-                (nodeStream as any).destroy();
-              }
-            });
-
-            await stream.pipeTo(writable);
-
-            toast({
-              title: "Download Complete",
-              description: `Saved ${file.name} to disk.`,
-            });
-          } else {
-            // Fallback to blob (still bounded by RAM, but graceful fallback)
-            file.getBlob((err, blob) => {
-              if (err || !blob) throw err;
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = file.name;
-              a.click();
-              URL.revokeObjectURL(url);
-              toast({
-                title: "Download Complete",
-                description: `Saved ${file.name}.`,
-              });
-            });
-          }
-        } catch (err: any) {
-          if (err.name !== 'AbortError') {
-            console.error('Save error:', err);
-            toast({
-              title: "Save Failed",
-              description: "Could not save file to disk.",
-              variant: "destructive"
-            });
-          }
-        } finally {
-          cleanupDownload();
+        downloadedBytes += chunk.length;
+        if (torrentData.fileSize > 0) {
+          setDownloadProgress((downloadedBytes / torrentData.fileSize) * 100);
         }
+      }
+
+      if (writableStream) {
+        await writableStream.close();
+      } else {
+        const blob = new Blob(chunks);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = torrentData.fileName;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      toast({
+        title: "Download Complete",
+        description: `Saved ${torrentData.fileName} to disk.`,
       });
-    });
+
+    } catch (err) {
+      if ((err as Error).name !== 'AbortError') {
+        console.error('Download error:', err);
+        toast({
+          title: "Download Failed",
+          description: "Could not retrieve or save file.",
+          variant: "destructive"
+        });
+      }
+    } finally {
+      cleanupDownload();
+    }
   };
 
   useEffect(() => {
@@ -191,6 +173,7 @@ const Library = () => {
     return () => {
       newSocket.disconnect();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toast]);
 
   const fetchTorrents = async () => {

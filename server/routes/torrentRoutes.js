@@ -3,31 +3,26 @@ const router = express.Router();
 const Torrent = require('../models/Torrent');
 
 module.exports = function (io) {
-  // Upload Route (Metadata only - client creates torrent and provides magnetURI)
+  // Upload Route (Metadata only - client adds file to IPFS and provides cid)
   router.post('/upload', async (req, res) => {
     try {
       console.log('Received upload request:', req.body);
-      const { title, description, category, magnetURI, infoHash, fileName, fileSize } = req.body;
+      const { title, description, category, cid, fileName, fileSize } = req.body;
 
       // Validate required fields (allow fileSize to be 0)
-      if (!title || !fileName || fileSize === undefined || fileSize === null) {
-        console.error('Missing required fields:', { title, fileName, fileSize });
+      if (!title || !fileName || fileSize === undefined || fileSize === null || !cid) {
+        console.error('Missing required fields:', { title, fileName, fileSize, cid });
         return res.status(400).json({ error: 'Missing required metadata fields' });
       }
 
-      // Generate ID if no infoHash provided (P2P mode)
-      const effectiveInfoHash = infoHash || require('crypto').randomBytes(20).toString('hex');
-      const effectiveMagnetURI = magnetURI || `magnet:?xt=urn:btih:${effectiveInfoHash}`;
-
-      // Check if torrent already exists
-      let torrent = await Torrent.findOne({ infoHash: effectiveInfoHash });
+      // Check if file already exists by CID
+      let torrent = await Torrent.findOne({ cid: cid });
 
       if (torrent) {
-        // Update existing torrent metadata (if necessary, though for zero-knowledge, re-uploading metadata might imply a new intent)
+        // Update existing metadata
         torrent.title = title;
         torrent.description = description;
         torrent.category = category || 'other';
-        torrent.magnetURI = effectiveMagnetURI;
         torrent.fileName = fileName; // Update if changed
         torrent.fileSize = fileSize; // Update if changed
         torrent.uploadedBy = 'anonymous'; // Keep anonymous for now
@@ -37,18 +32,17 @@ module.exports = function (io) {
         io.emit('torrent:update', torrent); // Notify clients of update
 
         return res.status(200).json({
-          message: 'Torrent metadata updated',
+          message: 'File metadata updated',
           torrent: torrent,
         });
       }
 
-      // Create New Torrent Record with metadata provided by client
+      // Create New Record with metadata provided by client
       const newTorrent = new Torrent({
         title,
         description,
         category: category || 'other',
-        magnetURI: effectiveMagnetURI,
-        infoHash: effectiveInfoHash,
+        cid: cid,
         fileName: fileName,
         fileSize: fileSize,
         seeders: 0, // Server is not a seeder

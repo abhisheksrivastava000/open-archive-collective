@@ -8,22 +8,19 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import QuoteBlock from "@/components/QuoteBlock";
-import { useWebTorrent } from "@/hooks/useWebTorrent";
 import { getApiUrl } from "@/lib/utils";
-import type { Torrent } from 'webtorrent';
+import { useIPFS } from "@/hooks/useIPFS";
 
 const Contribute = () => {
   const { toast } = useToast();
-  const client = useWebTorrent();
+  const { helia, fs } = useIPFS();
 
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
-  const [torrentInstance, setTorrentInstance] = useState<Torrent | null>(null);
-  const [uploadSpeed, setUploadSpeed] = useState(0);
-  const [numPeers, setNumPeers] = useState(0);
+  const [cidData, setCidData] = useState<string | null>(null);
   useEffect(() => {
     // Only keeping empty effect or remove, as socket might not be needed solely for seeding here webtorrent does the heavy lifting
   }, []);
@@ -49,10 +46,10 @@ const Contribute = () => {
       return;
     }
 
-    if (!client) {
+    if (!helia || !fs) {
       toast({
         title: "P2P Client Error",
-        description: "WebTorrent client is not ready.",
+        description: "IPFS client is not ready.",
         variant: "destructive",
       });
       return;
@@ -60,58 +57,53 @@ const Contribute = () => {
 
     setIsUploading(true);
 
-    client.seed(file, async (torrent) => {
-      setTorrentInstance(torrent);
+    try {
+      // Create a Uint8Array from the file
+      const arrayBuffer = await file.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
 
-      torrent.on('upload', () => {
-        setUploadSpeed(torrent.uploadSpeed);
-        setNumPeers(torrent.numPeers);
+      // Add the file to IPFS via UnixFS
+      const fileCid = await fs.addBytes(uint8Array);
+
+      setCidData(fileCid.toString());
+
+      const metadata = {
+        title: title,
+        description: description,
+        fileName: file.name,
+        fileSize: file.size,
+        cid: fileCid.toString(),
+        category: 'other',
+      };
+
+      const response = await fetch(`${getApiUrl()}/api/torrents/upload`, {
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(metadata),
       });
 
-      torrent.on('wire', () => {
-        setNumPeers(torrent.numPeers);
-      });
-
-      try {
-        const metadata = {
-          title: title,
-          description: description,
-          fileName: file.name,
-          fileSize: file.size,
-          magnetURI: torrent.magnetURI,
-          infoHash: torrent.infoHash,
-          category: 'other',
-        };
-
-        const response = await fetch(`${getApiUrl()}/api/torrents/upload`, {
-          method: "POST",
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(metadata),
-        });
-
-        if (!response.ok) {
-          throw new Error("Upload failed");
-        }
-
-        setUploadSuccess(true);
-        toast({
-          title: "Seeding Started",
-          description: "You are now sharing this file. Keep this tab open!",
-        });
-
-      } catch (error) {
-        console.error("Upload error:", error);
-        toast({
-          title: "Upload Failed",
-          description: "There was an error creating the library entry.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsUploading(false);
+      if (!response.ok) {
+        throw new Error("Upload failed");
       }
-    });
+
+      setUploadSuccess(true);
+      toast({
+        title: "Shared Successfully",
+        description: "Your file is now available on IPFS. Keep this tab open!",
+      });
+
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast({
+        title: "Upload Failed",
+        description: "There was an error creating the library entry.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -142,7 +134,7 @@ const Contribute = () => {
                 </div>
                 <h2 className="text-3xl font-display font-bold mb-2">Upload Files</h2>
                 <p className="text-muted-foreground">
-                  Select a file to generate a torrent. You are the <strong>First Peer</strong>. You must keep this tab open to seed.
+                  Select a file to share via IPFS. Keep this tab open to host the file.
                 </p>
               </div>
 
@@ -216,29 +208,27 @@ const Contribute = () => {
         </Card>
 
         {/* Active Seeding Status (Single Active Seed) */}
-        {torrentInstance && (
+        {cidData && (
           <div className="mb-16">
             <h2 className="text-3xl font-display font-bold mb-8 text-center">
-              Active Seeding
+              Active Hosting
             </h2>
             <Card className="p-6">
               <div className="flex justify-between items-center">
                 <div>
-                  <h3 className="font-bold text-lg">{torrentInstance.files[0]?.name || "Shared File"}</h3>
-                  <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
-                    <span>Speed: {(uploadSpeed / 1024).toFixed(1)} KB/s</span>
-                    <span>Peers: {numPeers}</span>
-                    <span>Uploaded: {(torrentInstance.uploaded / 1024 / 1024).toFixed(2)} MB</span>
+                  <h3 className="font-bold text-lg">{file?.name || "Shared File"}</h3>
+                  <div className="flex gap-4 mt-2 text-sm text-muted-foreground break-all">
+                    <span>CID: {cidData}</span>
                   </div>
                 </div>
                 <div className="text-green-600 flex items-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Seeding
+                  Hosting
                 </div>
               </div>
             </Card>
             <p className="text-center text-sm text-muted-foreground mt-4">
-              Keep this tab open for others to download.
+              Keep this tab open for others to securely retrieve this file.
             </p>
           </div>
         )}
